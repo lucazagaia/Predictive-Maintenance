@@ -1,0 +1,23 @@
+# Ignore virtual environment
+venv/
+
+# Ignore model or large result files
+*.h5
+*.hdf5
+*.pkl
+*.zip
+*.tar.gz
+*.csv
+*.log
+
+# Ignore notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+
+# Ignore datasets
+data/
+*.csv
+*.xlsx
