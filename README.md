@@ -11,11 +11,9 @@ The methodology is grounded in academic research and real-world applications, in
 ```bash
 📁 src/                   # Core logic and model architecture
   └── model.py           # CNN-RNN definition for predictive maintenance
-  └── train.py           # Training pipeline with callbacks and metrics
   └── utils.py           # Preprocessing, scaling, and dataset handling
 
 📁 notebooks/             # Evaluation notebooks and threshold optimization
-  └── threshold_sweep.ipynb  # Precision-recall threshold analysis
 
 📁 results/               # Output files from evaluations (ignored in Git)
 📁 data/                  # Local folder for input datasets (not tracked)
