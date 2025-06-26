@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
-# ✅ Define expected features CHANGEABLE
+# ✅ Define expected features (for training)
 EXPECTED_FEATURES = [
     'Air temperature [K]',
     'Process temperature [K]',
@@ -10,21 +10,6 @@ EXPECTED_FEATURES = [
     'Torque [Nm]',
     'Tool wear [min]'
 ]
-
-# ✅ Ensure columns match expected layout
-def align_features(df, expected_features=EXPECTED_FEATURES, fill_value=0):
-    # Keep only expected features
-    df = df.copy()
-    for col in expected_features:
-        if col not in df.columns:
-            df[col] = fill_value  # Or np.nan
-    df = df[expected_features]
-    
-    unexpected = set(df.columns) - set(expected_features)
-    if unexpected:
-        print(f"⚠️ Warning: Unexpected features {unexpected} will be ignored.")
-        df = df.drop(columns=unexpected)
-    return df
 
 # ✅ General preprocessing (for inference or training)
 def preprocess_input(df, scaler=None, expected_features=EXPECTED_FEATURES):
@@ -37,9 +22,22 @@ def preprocess_input(df, scaler=None, expected_features=EXPECTED_FEATURES):
     X_scaled = X_scaled.reshape((X_scaled.shape[0], X_scaled.shape[1], 1))
     return X_scaled, scaler
 
-# ✅ Training-specific function (used in notebook 01 or training pipeline)
+# ✅ Training-specific function
 def load_and_preprocess_data(path, test_size=0.2, random_state=42):
     df = pd.read_csv(path)
     X_scaled, scaler = preprocess_input(df)
     y = df['Machine failure']
     return train_test_split(X_scaled, y, test_size=test_size, random_state=random_state), scaler
+
+# ✅ Align features helper (used internally)
+def align_features(df, expected_features=EXPECTED_FEATURES, fill_value=0):
+    df = df.copy()
+    for col in expected_features:
+        if col not in df.columns:
+            df[col] = fill_value
+    df = df[expected_features]
+    unexpected = set(df.columns) - set(expected_features)
+    if unexpected:
+        print(f"⚠️ Warning: Unexpected features {unexpected} will be ignored.")
+        df = df.drop(columns=unexpected)
+    return df
