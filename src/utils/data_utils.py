@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+import joblib  # at the top
+import os
 
 # ✅ Define expected features (for training)
 EXPECTED_FEATURES = [
@@ -23,11 +25,15 @@ def preprocess_input(df, scaler=None, expected_features=EXPECTED_FEATURES):
     return X_scaled, scaler
 
 # ✅ Training-specific function
+
 def load_and_preprocess_data(path, test_size=0.2, random_state=42):
     df = pd.read_csv(path)
     X_scaled, scaler = preprocess_input(df)
     y = df['Machine failure']
     return train_test_split(X_scaled, y, test_size=test_size, random_state=random_state), scaler
+
+# 
+
 
 # ✅ Align features helper (used internally)
 def align_features(df, expected_features=EXPECTED_FEATURES, fill_value=0):
