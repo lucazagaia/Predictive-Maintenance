@@ -21,3 +21,6 @@ __pycache__/
 data/
 *.csv
 *.xlsx
+
+# notes
+notes/
