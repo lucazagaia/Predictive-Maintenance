@@ -1,26 +1,20 @@
-# Ignore virtual environment
-venv/
+# Ignore cache and temp
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
 
-# Ignore model or large result files
+# Ignore virtual environments
+venv/
+.venv/
+
+# Ignore big binary files (you can add back specific ones manually)
 *.h5
 *.hdf5
 *.pkl
 *.zip
 *.tar.gz
-*.csv
 *.log
+*.npy
 
-# Ignore notebook checkpoints
-.ipynb_checkpoints/
-
-# Ignore compiled Python files
-__pycache__/
-*.pyc
-
-# Ignore datasets
+# Ignore full raw dataset folder (optional)
 data/
-*.csv
-*.xlsx
-
-# notes
-notes/
