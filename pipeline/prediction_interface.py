@@ -19,6 +19,7 @@ import tensorflow as tf
 from datetime import datetime
 from typing import Dict
 import os
+import json
 
 
 class PredictionInterface:
@@ -31,25 +32,51 @@ class PredictionInterface:
     3. Maintenance planning recommendations
     """
     
-    def __init__(self, model_path: str = None):
+    def __init__(self, model_path: str = None, window_size: int = 30):
         """
         Initialize RUL prediction interface with trained model.
         
         Args:
             model_path: Path to trained Li et al. CNN model (.keras file)
                        If None, uses default model from ../prediction/models/
+            window_size: Number of historical readings to maintain (default: 30)
         """
         self.model = None
         self.model_loaded = False
+        self.window_size = window_size
+        
+        # Sensor history buffer for time series (window_size × 17 features)
+        # The model expects (batch, 30, 17) - 30 timesteps with 17 features each
+        self.sensor_history = []
         
         # Use default model if no path provided
         if model_path is None:
-            # Default to the best corrected Li et al. model
+            # Default to the working Li et al. model (15 features)
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            model_path = os.path.join(current_dir, "../prediction/models/li_et_al_cnn_corrected_best.keras")
+            model_path = os.path.join(current_dir, "../prediction/models/li_et_al_cnn_best.keras")
         
         self.model_path = model_path
+        
+        # Load normalization statistics
+        self.normalization_stats = self._load_normalization_stats()
+        
         self._load_rul_model()
+    
+    def _load_normalization_stats(self) -> Dict:
+        """Load the C-MAPSS normalization statistics used during training."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        stats_path = os.path.join(current_dir, "../prediction/results/normalization_stats.json")
+        
+        try:
+            if os.path.exists(stats_path):
+                with open(stats_path, 'r') as f:
+                    return json.load(f)
+            else:
+                print(f"⚠️  Normalization stats not found: {stats_path}")
+                return None
+        except Exception as e:
+            print(f"⚠️  Failed to load normalization stats: {e}")
+            return None
     
     def _load_rul_model(self):
         """Load the trained RUL model."""
@@ -76,14 +103,16 @@ class PredictionInterface:
         
         This method implements the complete RUL estimation workflow:
         1. **PREPROCESSING**: Virtual sensor abstraction (ADR → C-MAPSS format)
-        2. RUL model inference on preprocessed degradation indicators
-        3. Post-processing: Convert RUL to maintenance planning
+        2. Build time series buffer (maintains last 30 readings)
+        3. RUL model inference on time series data
+        4. Post-processing: Convert RUL to maintenance planning
         
         PREPROCESSING PIPELINE:
         ----------------------
         The preprocessing step is ESSENTIAL for RUL estimation because:
         - Converts ADR robot sensors → C-MAPSS turbofan format  
-        - Creates 6 degradation indicators from 4 ADR sensors
+        - Creates 17 features (2 settings + 15 sensors) from 4 ADR sensors
+        - Maintains sliding window of 30 timesteps for time series analysis
         - Normalizes features to [0,1] range for model compatibility
         - Enables RUL models trained on aircraft data to work on robots
         
@@ -109,12 +138,19 @@ class PredictionInterface:
         - rul ≥ 300:   planned → "> 1 month"     (Routine maintenance)
         """
         # STEP 1: PREPROCESSING - Virtual sensor abstraction and normalization
-        preprocessed_features = self._preprocess_adr_to_cmapss(adr_sensors)
+        cmapss_features = self._preprocess_adr_to_cmapss(adr_sensors)
         
-        # STEP 2: RUL MODEL INFERENCE - Run on preprocessed degradation indicators
-        rul_cycles = self._predict_rul(preprocessed_features)
+        # STEP 2: BUILD TIME SERIES - Maintain sliding window of readings
+        self.sensor_history.append(cmapss_features)
         
-        # STEP 3: POST-PROCESSING - Convert RUL to maintenance planning
+        # Keep only the last window_size readings
+        if len(self.sensor_history) > self.window_size:
+            self.sensor_history = self.sensor_history[-self.window_size:]
+        
+        # STEP 3: RUL MODEL INFERENCE - Run on time series data
+        rul_cycles = self._predict_rul()
+        
+        # STEP 4: POST-PROCESSING - Convert RUL to maintenance planning
         maintenance_plan = self._convert_to_maintenance_plan(rul_cycles)
         
         return maintenance_plan
@@ -129,6 +165,11 @@ class PredictionInterface:
         Returns:
             Maintenance planning dictionary with urgency levels and timeframes
         """
+        # Handle NaN or invalid RUL values
+        if np.isnan(rul_cycles) or rul_cycles < 0:
+            print(f"⚠️  Invalid RUL value: {rul_cycles}, using default")
+            rul_cycles = 300.0
+        
         if rul_cycles < 50:
             urgency = "immediate" 
             window = "< 1 week"
@@ -158,7 +199,7 @@ class PredictionInterface:
         
         VIRTUAL SENSOR ABSTRACTION:
         ---------------------------
-        Transforms 4 ADR sensors into 6 C-MAPSS-compatible degradation indicators:
+        Transforms 4 ADR sensors into 17 C-MAPSS-compatible features:
         
         INPUT (ADR Robot Sensors):
         - temperature: Thermal condition [°C]
@@ -166,27 +207,15 @@ class PredictionInterface:
         - pressure: Hydraulic health [bar]
         - current: Electrical load [A]
         
-        OUTPUT (C-MAPSS Degradation Indicators):
-        - thermal_degradation: Normalized temperature stress [0,1]
-        - mechanical_degradation: Vibration-based wear indicator [0,1]
-        - hydraulic_health: Pressure system efficiency [0,1]
-        - electrical_health: Current consumption efficiency [0,1]
-        - efficiency_loss: Combined system degradation [0,1]
-        - wear_indicator: Overall mechanical wear estimate [0,1]
-        
-        PREPROCESSING NORMALIZATION:
-        ---------------------------
-        All features are normalized to [0,1] range to match C-MAPSS model expectations:
-        - Temperature: Normalized by maximum operating temperature (100°C)
-        - Vibration: Scaled by factor of 2 for sensitivity 
-        - Pressure: Normalized by nominal operating pressure (15 bar)
-        - Current: Normalized by nominal operating current (12A)
+        OUTPUT (C-MAPSS Format - 17 features matching training data):
+        Maps ADR sensors to realistic C-MAPSS sensor ranges, then normalizes
+        using the same min-max scaling that was used during model training.
         
         Args:
             adr_sensors: Raw ADR sensor readings dictionary
             
         Returns:
-            Preprocessed degradation indicators array [6 features]
+            C-MAPSS compatible normalized features array [17 features]
         """
         # Extract raw ADR sensor values
         temp = adr_sensors["temperature"]
@@ -194,48 +223,142 @@ class PredictionInterface:
         pres = adr_sensors["pressure"] 
         curr = adr_sensors["current"]
         
-        # PREPROCESSING STAGE 1: Basic normalization to [0,1] range
-        thermal_degradation = temp / 100      # Normalize temperature (max 100°C)
-        mechanical_degradation = vibr * 2     # Scale vibration (sensitivity factor)
-        hydraulic_health = pres / 15          # Normalize pressure (nominal 15 bar)
-        electrical_health = curr / 12         # Normalize current (nominal 12A)
+        # Normalize ADR sensors to [0,1] range first
+        temp_norm = np.clip(temp / 100.0, 0, 1)      # 0-100°C
+        vibr_norm = np.clip(vibr * 2.0, 0, 1)        # 0-0.5g scaled
+        pres_norm = np.clip(pres / 15.0, 0, 1)       # 0-15 bar
+        curr_norm = np.clip(curr / 12.0, 0, 1)       # 0-12A
         
-        # PREPROCESSING STAGE 2: Derived degradation indicators  
-        # Combine multiple sensors to create synthetic health indicators
-        efficiency_loss = 1.0 - (hydraulic_health * electrical_health)
-        wear_indicator = mechanical_degradation + (thermal_degradation - 0.75)
+        # Map normalized ADR sensors to C-MAPSS sensor value ranges
+        # C-MAPSS data has specific ranges for each sensor
         
-        # PREPROCESSING STAGE 3: Construct C-MAPSS compatible feature vector
-        # Order matches C-MAPSS sensor arrangement for model compatibility
-        preprocessed_features = np.array([
-            thermal_degradation,      # Virtual sensor 1: Temperature stress
-            mechanical_degradation,   # Virtual sensor 2: Vibration wear  
-            hydraulic_health,         # Virtual sensor 3: Pressure efficiency
-            electrical_health,        # Virtual sensor 4: Current efficiency
-            efficiency_loss,          # Virtual sensor 5: Combined degradation
-            wear_indicator           # Virtual sensor 6: Wear progression
+        #  Operational Settings (2 settings - op_setting_3 removed)
+        setting_1 = -0.0087 + temp_norm * (0.0087 - (-0.0087))      # -0.0087 to 0.0087
+        setting_2 = -0.0006 + pres_norm * (0.0007 - (-0.0006))      # -0.0006 to 0.0007
+        # Note: op_setting_3 (constant 100.0) removed in this version
+        
+        # Temperature sensors (sensors 2, 3, 7, 8 - removed sensor_4 and sensor_6)
+        sensor_2 = 641.13 + temp_norm * (644.53 - 641.13)                          # Total temp at fan inlet
+        sensor_3 = 1569.04 + temp_norm * (1616.91 - 1569.04)                       # Total temp at LPC outlet
+        # sensor_4 removed
+        sensor_7 = 549.85 + temp_norm * (556.06 - 549.85)                          # Total temp at HPT outlet  
+        sensor_8 = 2387.89 + temp_norm * 0.1 * (2388.56 - 2387.89)                 # Pressure at HPC outlet (minimal variation)
+        
+        # Pressure sensors (sensors 9, 11, 12)
+        sensor_9 = 9021.73 + pres_norm * (9244.59 - 9021.73)             # Physical fan speed
+        sensor_11 = 46.8 + pres_norm * (48.53 - 46.8)                    # Physical core speed
+        sensor_12 = 518.69 + pres_norm * (523.76 - 518.69)               # Static pressure at HPC outlet
+        
+        # Speed/vibration sensors (sensors 13, 14, 15)
+        sensor_13 = 2387.88 + vibr_norm * 0.1 * (2388.56 - 2387.88)      # Corrected fan speed
+        sensor_14 = 8099.94 + vibr_norm * (8293.72 - 8099.94)            # Corrected core speed
+        sensor_15 = 8.3249 + (vibr_norm + temp_norm * 0.3) * 0.5 * (8.5848 - 8.3249)  # Bypass ratio
+        
+        # Flow/current sensors (sensors 17, 20, 21)
+        sensor_17 = 388.0 + curr_norm * (400.0 - 388.0)                  # Physical fan speed
+        sensor_20 = 38.14 + curr_norm * (39.43 - 38.14)                  # Ratio of fuel flow to Ps30
+        sensor_21 = 22.8942 + curr_norm * (23.6419 - 22.8942)            # HPT coolant bleed
+        
+        # Construct raw C-MAPSS feature vector (before normalization)
+        # 2 operational settings + 13 sensors = 15 features
+        cmapss_raw = np.array([
+            setting_1, setting_2,              # Settings (0-1)
+            sensor_2, sensor_3,                # Temps (2-3)
+            sensor_7, sensor_8,                # Temps (7-8)
+            sensor_9, sensor_11, sensor_12,    # Pressures/speeds (9-11)
+            sensor_13, sensor_14, sensor_15,   # Speeds (13-15)
+            sensor_17, sensor_20, sensor_21    # Flows (17, 20-21)
         ])
         
-        return preprocessed_features
+        # Apply min-max normalization using training statistics
+        if self.normalization_stats:
+            cmapss_normalized = self._normalize_features(cmapss_raw)
+            return cmapss_normalized
+        else:
+            # Fallback: return as-is if normalization stats not available
+            print("⚠️  Using raw features without normalization")
+            return cmapss_raw
     
-    def _predict_rul(self, preprocessed_features: np.ndarray) -> float:
+    def _normalize_features(self, features: np.ndarray) -> np.ndarray:
+        """
+        Apply min-max normalization using training statistics.
+        
+        The normalization formula from training: 2(x - x_min)/(x_max - x_min) - 1
+        This normalizes to [-1, 1] range (not [0, 1])
+        
+        Args:
+            features: Raw C-MAPSS features [15 values]
+            
+        Returns:
+            Normalized features in [-1,1] range
+        """
+        # 15 features = 2 settings + 13 sensors (no op_setting_3, no sensor_4, no sensor_6)
+        feature_columns = [
+            "op_setting_1", "op_setting_2",
+            "sensor_2", "sensor_3",
+            "sensor_7", "sensor_8", "sensor_9",
+            "sensor_11", "sensor_12", "sensor_13",
+            "sensor_14", "sensor_15", "sensor_17",
+            "sensor_20", "sensor_21"
+        ]
+        
+        normalized = np.zeros_like(features)
+        feature_min = self.normalization_stats["feature_min"]
+        feature_max = self.normalization_stats["feature_max"]
+        
+        for i, col in enumerate(feature_columns):
+            if i >= len(features):
+                break
+            min_val = feature_min[col]
+            max_val = feature_max[col]
+            
+            if max_val - min_val > 0:
+                # Apply the training normalization formula: 2(x - min)/(max - min) - 1
+                normalized[i] = 2 * (features[i] - min_val) / (max_val - min_val) - 1
+            else:
+                normalized[i] = 0.0  # Constant feature → 0 in [-1, 1] range
+        
+        return np.clip(normalized, -1, 1)
+    
+    def _predict_rul(self) -> float:
         """
         RUL MODEL INFERENCE using trained Li et al. CNN model.
         
         This method uses the actual trained CNN model to predict remaining useful life
-        from preprocessed degradation indicators.
+        from the time series of preprocessed features.
         
-        Args:
-            preprocessed_features: Normalized degradation indicators [6 features]
-            
+        MODEL INPUT REQUIREMENTS:
+        ------------------------
+        - Shape: (1, 30, 15) - batch_size=1, timesteps=30, features=15
+        - Time series: Last 30 sensor readings with 15 features each
+        - If fewer than 30 readings available, pad with first reading
+        
         Returns:
             Estimated remaining useful life in operational cycles
         """
         if self.model_loaded and self.model is not None:
             # REAL MODEL PREDICTION using trained Li et al. CNN
             try:
-                # Reshape for model input: (1, features)
-                model_input = preprocessed_features.reshape(1, -1)  # Shape: (1, 6)
+                # Build time series input (30 timesteps × 15 features)
+                current_history_len = len(self.sensor_history)
+                
+                if current_history_len == 0:
+                    # No data yet - return default value
+                    print("⚠️  No sensor history available yet")
+                    return 300.0
+                
+                if current_history_len < self.window_size:
+                    # Pad with first reading if we don't have enough history yet
+                    padding_needed = self.window_size - current_history_len
+                    first_reading = self.sensor_history[0]
+                    padded_history = [first_reading] * padding_needed + self.sensor_history
+                    time_series = np.array(padded_history)
+                else:
+                    # Use the last window_size readings
+                    time_series = np.array(self.sensor_history[-self.window_size:])
+                
+                # Reshape for model input: (1, 30, 15)
+                model_input = time_series.reshape(1, self.window_size, 15)
                 
                 # Get prediction from trained model
                 rul_prediction = self.model.predict(model_input, verbose=0)[0][0]
@@ -247,10 +370,16 @@ class PredictionInterface:
                 
             except Exception as e:
                 print(f"⚠️  Model prediction failed: {e}")
+                print(f"   Sensor history length: {len(self.sensor_history)}")
+                print(f"   Expected input shape: (1, {self.window_size}, 15)")
                 print("🔄 Falling back to mock prediction")
                 
         # FALLBACK: Mock prediction if model loading failed
-        health_score = np.mean(preprocessed_features)
+        if len(self.sensor_history) > 0:
+            health_score = np.mean(self.sensor_history[-1])
+        else:
+            health_score = 0.5
+            
         base_rul = 400
         health_penalty = health_score * 200
         noise = np.random.normal(0, 30)

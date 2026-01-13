@@ -1,344 +1,213 @@
 # 🤖 Predictive Maintenance for Robot Systems
 
-A comprehensive predictive maintenance solution combining **anomaly detection** and **Remaining Useful Life (RUL) prediction** for robot systems. Built on SmartPDM washing machine sensor data and optimized for edge deployment.
+Complete predictive maintenance pipeline combining real-time **anomaly detection** and **RUL prediction** for industrial robot systems.
 
-## 📋 **Project Overview**
+## Project Overview
 
-This repository implements a complete predictive maintenance pipeline with two main components:
+**Components:**
+- **Detection**: CNN-RNN hybrid ensemble for real-time anomaly detection (Recall: 94.7%, Precision: 85.3%)
+- **Prediction**: Edge-optimized RUL models with TensorFlow Lite (<10MB, <50ms inference)
+- **Fusion**: Integrated decision-making pipeline combining detection and prediction outputs
 
-- **🔍 Detection**: Real-time anomaly detection for immediate fault identification
-- **📊 Prediction**: RUL prediction with uncertainty quantification for maintenance scheduling
+**Status:** Detection complete ✅ | Prediction models trained ✅ | Integration pipeline ready ✅
 
-**Current Status**: 3/4 Milestones Complete ✅ | Production-Ready Edge Deployment | Safety-Critical Applications
-
----
-
-## 🏗️ **Architecture Overview**
+## Architecture
 
 ```
-┌─────────────────────┐    ┌─────────────────────┐
-│   DETECTION         │    │   PREDICTION        │
-│   Real-time         │    │   Long-term         │
-│   Anomaly Detection │    │   RUL Estimation    │
-└─────────────────────┘    └─────────────────────┘
-           │                           │
-           └─────── Robot Fleet ──────┘
-                 Edge Deployment
+Sensor Data → Detection (anomaly) + Prediction (RUL) → Fusion → Maintenance Decision
 ```
 
----
+## Data Flow & Communication Process
 
-# 🔍 **DETECTION COMPONENT**
+### End-to-End Pipeline: From Sensors to Maintenance Decisions
 
-## **Current Implementation Status: PRODUCTION READY ✅**
+The system processes raw sensor data through multiple stages, transforming it into actionable maintenance decisions. Here's the complete communication flow:
 
-### **📊 Performance Metrics**
-- **Recall**: 94.7% (High sensitivity for fault detection)
-- **Precision**: 85.3% (Reduced false alarms)
-- **F1-Score**: 89.8% (Balanced performance)
-- **Inference Time**: <20ms (Real-time capable)
-
-### **🏗️ Model Architecture**
-
-#### **Advanced Ensemble Pipeline**
-```
-Input Data (Sensor Streams)
-          ↓
-┌─────────────────────┐
-│  Feature Engineering │
-│  - Temporal features │ 
-│  - Frequency domain  │
-│  - Statistical metrics│
-└─────────────────────┘
-          ↓
-┌─────────────────────┐    ┌─────────────────────┐
-│   CNN-RNN Model     │    │   XGBoost Model     │
-│   Deep Learning     │    │   Gradient Boosting │
-│   Sequential Pattern│    │   Feature-based     │
-└─────────────────────┘    └─────────────────────┘
-          │                           │
-          └─── Meta-Learner (LR) ──────┘
-                     ↓
-              Final Prediction
-```
-
-#### **Model Components**
-1. **CNN-RNN Hybrid**: 
-   - Sequential pattern recognition
-   - 512-point time windows
-   - Convolutional feature extraction + LSTM temporal modeling
-
-2. **XGBoost Ensemble**:
-   - Gradient-boosted decision trees
-   - Engineered statistical features
-   - Robust to outliers and noise
-
-3. **Meta-Learning Stack**:
-   - Logistic Regression combiner
-   - Optimal threshold: 0.36 
-   - Probability calibration
-
-### **🔄 Data Pipeline**
-- **Input**: Dataset with 5 sensors and failure modes
-- **Features**: Time-series windows (512 samples)
-- **Preprocessing**: Standardization + Class balancing (SMOTE)
-- **Labels**: Binary (Normal/Anomaly)
-
-### **📁 Detection File Structure**
-```
-detection/
-├── data/
-│   └── dataset.csv                 # Raw sensor data
-├── models/
-│   ├── cnn_rnn_hybridensemble.keras    # Deep learning model
-│   ├── rf_model_hybridensemble.pkl     # Random Forest backup
-│   └── scaler_hybridensemble.pkl       # Feature scaler
-├── notebooks/
-│   ├── 00_inference.ipynb              # Basic inference
-│   ├── 01_exploration.ipynb            # Data analysis
-│   ├── 02_recall_boosting.ipynb        # Performance optimization
-│   ├── 03_hybrid_ensemble.ipynb        # Model combination
-│   ├── 04_advanced_ensemble.ipynb      # Final ensemble [LATEST]
-│   ├── 05_single_inference.ipynb       # Single-sample testing
-│   ├── 06_batch_inference.ipynb        # Batch processing
-│   └── 07_realtime_simulation.ipynb    # Real-time simulation
-├── results/
-│   └── realtime_predictions_log.csv    # Inference logs
-└── src/
-    ├── model.py                    # Model definitions
-    ├── realtime_interface.py       # Real-time processing
-    └── utils/
-        ├── data_utils.py          # Data preprocessing
-        └── fallback_utils.py      # Error handling
-```
-
-### **🚀 Current Capabilities**
-- **Real-time Processing**: 20ms inference with streaming data
-- **Batch Inference**: Process multiple samples simultaneously
-- **Fallback Systems**: Graceful degradation with backup models
-- **Logging & Monitoring**: Complete prediction tracking
-
----
-
-# 📊 **PREDICTION COMPONENT**
-
-## **Current Implementation Status: MILESTONE 3 COMPLETE ⚠️ (Data Integration Issue)**
-
-### **🎯 Milestone Progress**
-- ✅ **Milestone 1**: Model Optimization (COMPLETE)
-- ✅ **Milestone 2**: Uncertainty Quantification (COMPLETE) 
-- 📋 **Milestone 4**: Robot Deployment (PLANNED)
-
-### **📊 Current Performance**
-
-#### **Milestone 2 - Uncertainty Quantification Results**
-- **Uncertainty Coverage**: 89.2% (Target: 90%) ✅
-- **Monte Carlo Dropout**: Calibration factor 3.0x
-- **Deep Ensembles**: Calibration factor 2.21x
-- **Safety Integration**: Conservative predictions with 75% confidence threshold
-
-
-### **🏗️ Technical Architecture**
-
-#### **Edge-Optimized Models**
-- **Model Size**: <10MB (Edge deployment ready)
-- **Parameters**: 184K (Milestone 1) → 185K+ (Milestone 3)
-- **Inference Time**: <50ms (Real-time capable)
-- **Format**: TensorFlow Lite compatible
-
-#### **Uncertainty Quantification Pipeline**
-```
-Input Data (Time Series)
-          ↓
-┌─────────────────────┐
-│  Feature Engineering │
-│  - Temporal features │
-│  - Frequency domain  │
-└─────────────────────┘
-          ↓
-┌─────────────────────┐    ┌─────────────────────┐
-│  Monte Carlo        │    │  Deep Ensembles    │
-│  Dropout (100 runs) │    │  (5 models)       │
-│  Epistemic Uncert.  │    │  Aleatoric Uncert. │
-└─────────────────────┘    └─────────────────────┘
-          │                           │
-          └──── Calibration Layer ────┘
-                     ↓
-          RUL ± Confidence Intervals
-```
-
-#### **Multi-Component Fusion Architecture**
-```
-Motor Data     Battery Data    Sensor Data
-(Current+Vib)  (V+I+Temp)     (Signal+Drift)
-     ↓              ↓              ↓
-Component      Component      Component
-Model          Model          Model
-     ↓              ↓              ↓
-   Representation  Representation  Representation
-     └──────────────┼──────────────┘
-                    ↓
-            Attention Mechanism
-                    ↓
-             System-Level RUL
-          (Health + Failure Risk)
-```
-
-### **📁 Prediction File Structure**
-```
-prediction/
-├── data/
-│   ├── SMARTPDM_dataset.csv/     # Real sensor data (Milestones 1&2)
-│   └── stream_labels.csv         # Stream processing labels
-├── models/
-│   └── [Generated during training]
-├── notebooks/
-│   ├── 00_preprocess_data.ipynb           # Data preparation
-│   ├── 01_train_HDE_A_model_for_RUL.ipynb # Initial RUL model
-│   ├── 02_train_simple_RUL_model.ipynb    # Baseline model
-│   ├── 03_train_RUL_Generator.ipynb       # Data augmentation
-│   ├── 04_Tuned_RUL_Model.ipynb          # Hyperparameter optimization
-│   ├── 05_Milestone1_Model_Optimization.ipynb      # Edge optimization [COMPLETE]
-│   ├── 06_Milestone2_Uncertainty_Quantification.ipynb # Safety systems [COMPLETE]
-│   └── 07_Milestone3_MultiComponent_Fusion.ipynb   # Component fusion [IN PROGRESS]
-├── results/
-└── src/
-    ├── model.py               # Model architectures
-    └── utils/
-        └── preprocessing.py   # Data utilities
-```
-
----
-
-## ⚠️ **CRITICAL ISSUES & NEXT STEPS**
-
-### **🚨 High Priority**
-
-#### **System-Level Performance Gap**
-- **Current**: System R² ~0.65, MAE ~60-70 cycles  
-- **Target**: System R² >0.75, MAE <50 cycles
-- **Solution**: Improve fusion architecture and attention mechanisms
-- **Timeline**: 2-3 weeks
-
-### **📋 Planned Development**
-
-#### **Milestone 4: Robot Deployment** 
-- Real-world robot fleet integration
-- Edge device deployment (Raspberry Pi/Jetson)
-- Production monitoring dashboard
-- Field validation studies
-
-#### **Advanced Features**
-- Federated learning across robot fleet
-- Explainable AI for technician insights
-- Digital twin integration
-- Adaptive maintenance scheduling
-
----
-
-## 🛠️ **Installation & Usage**
-
-### **Prerequisites**
-```bash
-Python 3.8+
-TensorFlow 2.x
-scikit-learn
-pandas
-matplotlib
-xgboost
-imbalanced-learn
-```
-
-### **Detection Usage**
-```python
-# Real-time anomaly detection
-from detection.src.realtime_interface import RealtimeDetector
-
-detector = RealtimeDetector()
-anomaly_prob = detector.predict(sensor_data)
-```
-
-### **Prediction Usage**
-```python
-# RUL prediction with uncertainty
-from prediction.src.model import UncertaintyRULPredictor
-
-predictor = UncertaintyRULPredictor()
-rul_mean, rul_std, confidence_interval = predictor.predict(sensor_data)
-```
-
-### **Running Notebooks**
-```bash
-# Detection experiments
-cd detection/notebooks/
-jupyter lab
-
-# Prediction milestones
-cd prediction/notebooks/  
-jupyter lab
-```
-
----
-
-## 📊 **Key Performance Indicators**
-
-| Component | Metric | Current | Target | Status |
-|-----------|--------|---------|--------|--------|
-| **Detection** | Recall | 94.7% | >90% | ✅ |
-| **Detection** | Precision | 85.3% | >80% | ✅ |
-| **Detection** | Inference Time | <20ms | <50ms | ✅ |
-| **Prediction** | Model Size | <10MB | <10MB | ✅ |
-| **Prediction** | Uncertainty Coverage | 89.2% | >90% | ⚠️ |
-| **Prediction** | System R² | 0.65 | >0.75 | ⚠️ |
-| **Overall** | Edge Compatibility | Yes | Yes | ✅ |
-
----
-
-## 🔄 **Latest Updates**
-
-### **Recent Changes (Latest)**
-- ✅ Advanced ensemble detection model (04_advanced_ensemble.ipynb)
-- ✅ Uncertainty quantification with 89.2% coverage
-- 🚧 Multi-component fusion architecture (needs data integration)
-- ✅ Edge optimization with <10MB models
-- ✅ TensorFlow Lite deployment readiness
-
-### **Known Issues**
-1. **System Fusion**: Performance gap in multi-component integration
-2. **Coverage Target**: Uncertainty quantification at 89.2% vs 90% target
-
-### **Immediate Priorities**
-1. Optimize fusion model performance (2-3 weeks)  
-3. Prepare Milestone 4 robot deployment (4-6 weeks)
-
----
-
-## 📝 **Research Context**
-
-**Institution**: Technical University of Berlin (TUB)  
-**Project**: Bachelor Thesis - Predictive Maintenance for Robot Systems  
-**Dataset**: SmartPDM Industrial Sensor Data, Dataset Robot Sensor Data
-**Domain**: Industrial IoT, Robot Fleet Management, Edge AI
-
-**Publication Potential**: Industrial deployment results and uncertainty quantification methods suitable for conference submission.
-
----
-
-## 📄 **License & Citation**
-
-Research project for academic purposes. Please cite if using in research:
-
-```
-@misc{zagaia2025_predictive_maintenance,
-  title={Predictive Maintenance for Robot Systems: Detection and RUL Prediction with Uncertainty Quantification},
-  author={Luca Zagaia},
-  institution={Technical University of Berlin},
-  year={2025}
+#### **Stage 1: Sensor Data Collection**
+**Format:** JSON dictionary with physical measurements
+```json
+{
+  "temperature": 75.2,
+  "vibration": 0.3,
+  "pressure": 14.8,
+  "current": 10.1
 }
 ```
+**Information Type:** Raw sensor readings from robot hardware  
+**Communication:** Real-time data stream from IoT sensors
 
 ---
 
-**Last Updated**: January 8, 2025  
-**Version**: v2.0 (Milestone 2 - Uncertainty Quantification)  
-**Status**: 75% Complete - Production Ready for Detection, Prediction in Final Optimization
+#### **Stage 2A: Detection Processing**
+**Input:** Raw ADR sensor data → **Process:** Virtual sensor abstraction & normalization → CNN-RNN ensemble inference
+
+**Output Format:** Health status assessment
+```json
+{
+  "status": "warning",
+  "confidence": 0.85,
+  "details": "Elevated anomaly score: 0.42",
+  "timestamp": "2026-01-13T14:23:15"
+}
+```
+**Information Type:** Real-time operational health (healthy/warning/anomaly)  
+**Inference Time:** <20ms  
+**Communication:** Synchronous API response
+
+---
+
+#### **Stage 2B: Prediction Processing**
+**Input:** Raw ADR sensor data → **Process:** Time-series windowing (30 samples) → Li et al. CNN model inference
+
+**Output Format:** RUL estimation with maintenance planning
+```json
+{
+  "rul_cycles": 245,
+  "confidence": 0.82,
+  "maintenance_window": "2-4 weeks",
+  "urgency": "soon",
+  "timestamp": "2026-01-13T14:23:15"
+}
+```
+**Information Type:** Remaining useful life prediction  
+**Inference Time:** <50ms  
+**Communication:** Synchronous API response
+
+---
+
+#### **Stage 3: Fusion Layer Decision**
+**Input:** Combined detection + prediction results → **Process:** Priority-based decision matrix
+
+**Decision Matrix Logic:**
+```
+                           RUL Status
+                 |  Immediate | Urgent  | Soon   |  Planned
+    ─────────────────────────────────────────
+Status  Anomaly  │  STOP       STOP       STOP      STOP
+        Warning  │  URGENT     URGENT     MONITOR   MONITOR
+        Healthy  │  SCHEDULE   CONTINUE   CONTINUE  CONTINUE
+```
+
+**Output Format:** Actionable maintenance decision
+```json
+{
+  "action": "monitor_closely",
+  "priority": "low",
+  "reasoning": "Warning status but adequate RUL (245 cycles)",
+  "robot_status": "warning",
+  "rul_cycles": 245,
+  "maintenance_window": "2-4 weeks",
+  "timestamp": "2026-01-13T14:23:15"
+}
+```
+**Information Type:** Maintenance command with business logic  
+**Communication:** Final decision message to operators/systems
+
+---
+
+### Example Communication Scenarios
+
+**Scenario 1: Critical Anomaly**
+```
+Sensors: {temp: 95.2, vibration: 1.8, pressure: 8.2, current: 18.5}
+   ↓
+Detection: {"status": "anomaly", "confidence": 0.92}
+Prediction: {"rul_cycles": 150, "urgency": "soon"}
+   ↓
+FUSION DECISION:
+{
+  "action": "stop_and_inspect",
+  "priority": "critical",
+  "reasoning": "Anomaly detected: High vibration and temperature",
+  "robot_status": "anomaly"
+}
+→ MESSAGE TO OPERATOR: "⛔ CRITICAL: Stop robot immediately for inspection"
+```
+
+**Scenario 2: Healthy with Low RUL**
+```
+Sensors: {temp: 72.1, vibration: 0.2, pressure: 14.5, current: 9.8}
+   ↓
+Detection: {"status": "healthy", "confidence": 0.88}
+Prediction: {"rul_cycles": 45, "urgency": "immediate"}
+   ↓
+FUSION DECISION:
+{
+  "action": "schedule_maintenance_soon",
+  "priority": "medium",
+  "reasoning": "Low RUL (45 cycles) but robot status OK",
+  "maintenance_window": "< 1 week"
+}
+→ MESSAGE TO OPERATOR: "📅 SCHEDULE: Plan maintenance within 1 week (45 cycles remaining)"
+```
+
+**Scenario 3: Normal Operation**
+```
+Sensors: {temp: 68.5, vibration: 0.15, pressure: 15.2, current: 10.0}
+   ↓
+Detection: {"status": "healthy", "confidence": 0.91}
+Prediction: {"rul_cycles": 320, "urgency": "planned"}
+   ↓
+FUSION DECISION:
+{
+  "action": "continue_operation",
+  "priority": "normal",
+  "reasoning": "Healthy robot, RUL: 320 cycles (> 1 month)",
+  "robot_status": "healthy"
+}
+→ MESSAGE TO OPERATOR: "✅ NORMAL: Continue operation - next maintenance in 1+ month"
+```
+
+## Project Structure
+
+```
+detection/
+├── models/              # CNN-RNN ensemble, recall-optimized models
+├── notebooks/           # 00-03: inference, exploration, optimization, ensemble
+└── src/                 # model.py, data utilities
+
+prediction/
+├── models/              # Li et al. CNN models, TFLite optimized versions
+├── notebooks/           # 00-01: preprocessing, DNN modeling
+└── src/                 # model.py, preprocessing utilities
+
+pipeline/
+├── detection_interface.py    # Detection wrapper
+├── prediction_interface.py   # Prediction wrapper
+├── fusion.py                 # Decision fusion logic
+└── simple_test.py           # Integration test
+```
+
+## Key Models
+
+**Detection:**
+- `cnn_rnn_hybridensemble.keras` - Production ensemble model
+- `cnn_rnn_recall_optimized.keras` - High-recall variant
+
+**Prediction:**
+- `li_et_al_cnn_corrected_best.keras` - Best performing RUL model
+- `robot_rul_edge_optimized.tflite` - Edge deployment version
+
+## Quick Start
+
+**Detection:**
+```python
+from pipeline.detection_interface import DetectionInterface
+detector = DetectionInterface()
+result = detector.predict(sensor_window)  # Returns anomaly probability
+```
+
+**Prediction:**
+```python
+from pipeline.prediction_interface import PredictionInterface
+predictor = PredictionInterface()
+result = predictor.predict(sensor_data)  # Returns RUL estimate
+```
+
+**Integrated Pipeline:**
+```python
+from pipeline.fusion import MaintenanceFusion
+fusion = MaintenanceFusion()
+decision = fusion.make_decision(detection_result, prediction_result)
+# Returns: action, priority, reasoning
+```
