@@ -10,7 +10,7 @@ venv/
 # Ignore big binary files (you can add back specific ones manually)
 *.h5
 *.hdf5
-*.pkl
+
 *.zip
 *.tar.gz
 *.log

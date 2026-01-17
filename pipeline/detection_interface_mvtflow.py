@@ -181,8 +181,6 @@ class MVTFlowDetectionInterface:
         # MODEL INFERENCE
         if self.model_loaded:
             anomaly_score = self._detect_anomaly_mvtflow(sensor_window)
-        else:
-            anomaly_score = self._mock_detect_anomaly(sensor_window)
         
         # Update score history
         self.score_history.append(anomaly_score)
@@ -205,22 +203,6 @@ class MVTFlowDetectionInterface:
         scores = self.detector.predict_anomaly_score(sensor_window)
         return float(scores[0])
     
-    def _mock_detect_anomaly(self, sensor_window: np.ndarray) -> float:
-        """
-        Mock anomaly detection for testing when model not loaded.
-        
-        Uses simple statistical heuristics on sensor data.
-        """
-        # Calculate statistical features
-        mean_vals = np.mean(sensor_window, axis=2)
-        std_vals = np.std(sensor_window, axis=2)
-        
-        # Simple anomaly score: deviation from expected ranges
-        # This mimics the structure of real anomaly scores
-        base_score = 70000 + np.sum(std_vals) * 1000
-        noise = np.random.normal(0, 500)
-        
-        return base_score + noise
     
     def _convert_to_robot_status(self, anomaly_score: float) -> Dict:
         """
@@ -241,20 +223,20 @@ class MVTFlowDetectionInterface:
         Returns:
             Structured robot status
         """
-        # Auto-calibrate thresholds from score history
-        if len(self.score_history) >= 100 and self.normal_threshold is None:
-            # Use first 100 scores to establish baseline
-            self.normal_threshold = np.percentile(list(self.score_history), 95)
-            print(f"📊 Auto-calibrated normal threshold: {self.normal_threshold:.2f}")
+        # # Auto-calibrate thresholds from score history
+        # if len(self.score_history) >= 100 and self.normal_threshold is None:
+        #     # Use first 100 scores to establish baseline
+        #     self.normal_threshold = np.percentile(list(self.score_history), 95)
+        #     print(f"📊 Auto-calibrated normal threshold: {self.normal_threshold:.2f}")
         
-        # Use default thresholds if not calibrated
-        if self.normal_threshold is None:
-            warning_threshold = 74500
-            anomaly_threshold = 75000
-        else:
-            # Use calibrated thresholds
-            warning_threshold = self.normal_threshold
-            anomaly_threshold = self.normal_threshold + 500
+        # # Use default thresholds if not calibrated
+        # if self.normal_threshold is None:
+        #     warning_threshold = 74500
+        #     anomaly_threshold = 75000
+        # else:
+        #     # Use calibrated thresholds
+        #     warning_threshold = self.normal_threshold
+        #     anomaly_threshold = self.normal_threshold + 500
         
         # Determine status
         if anomaly_score > anomaly_threshold:
@@ -327,29 +309,29 @@ class MVTFlowDetectionInterface:
 
 
 
-# Quick test
-if __name__ == "__main__":
-    # Example: Initialize interface with mock paths
-    model_path = "../detection/models/mvt_flow_voraus_ad.pt"
-    scaler_path = "../detection/models/scaler_voraus_ad.pkl"
+# # Quick test
+# if __name__ == "__main__":
+#     # Example: Initialize interface with mock paths
+#     model_path = "../detection/models/mvt_flow_voraus_ad.pt"
+#     scaler_path = "../detection/models/scaler_voraus_ad.pkl"
     
-    try:
-        interface = MVTFlowDetectionInterface(
-            model_path=model_path,
-            scaler_path=scaler_path,
-            window_size=1100,
-            n_signals=130
-        )
+#     try:
+#         interface = MVTFlowDetectionInterface(
+#             model_path=model_path,
+#             scaler_path=scaler_path,
+#             window_size=1100,
+#             n_signals=130
+#         )
         
-        # Test with random window data
-        test_window = np.random.randn(1, 130, 1100)
-        result = interface.get_robot_status(test_window)
+#         # Test with random window data
+#         test_window = np.random.randn(1, 130, 1100)
+#         result = interface.get_robot_status(test_window)
         
-        print("\n🧪 Test Result:")
-        print(f"   Status: {result['status']}")
-        print(f"   Confidence: {result['confidence']}")
-        print(f"   Details: {result['details']}")
+#         print("\n🧪 Test Result:")
+#         print(f"   Status: {result['status']}")
+#         print(f"   Confidence: {result['confidence']}")
+#         print(f"   Details: {result['details']}")
         
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        print("   (Expected if model files don't exist yet)")
+#     except Exception as e:
+#         print(f"❌ Test failed: {e}")
+#         print("   (Expected if model files don't exist yet)")
