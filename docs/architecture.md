@@ -1,41 +1,44 @@
 # Architecture
 
 This repo implements the **model + decision-logic layer** of the thesis reference
-architecture — not the full edge/cloud system. The diagram below is a conceptual
-restatement of the data path; it deliberately does not reproduce thesis figures.
+architecture (Abbildung 2). The layered edge/cloud structure and the message flow are
+modelled in software — an **edge node** (detection), a **cloud node** (RUL + decision), and
+**typed messages over named topics** (`src/messages.py`, mirroring the thesis ROS2
+`state.msg`). It runs in one process; there is no real ROS2 transport or on-robot
+deployment. The diagram is a conceptual restatement and does not reproduce thesis figures.
 
 ```
-                 ┌──────────────────────────────────────────────────────────┐
-                 │                     run_demo.py                            │
-                 └──────────────────────────────────────────────────────────┘
-                                          │
-        ┌─────────────────────────────────┴─────────────────────────────────┐
-        │                                                                     │
- voraus-AD window                                              ADR sensor reading
- (130 signals × 1100 steps)                                    (temp, vibration,
-        │                                                       pressure, current)
-        ▼                                                                     ▼
-┌─────────────────────┐                                      ┌───────────────────────┐
-│  DETECTION          │                                      │  PREDICTION           │
-│  MVT-Flow           │                                      │  Li et al. CNN        │
-│  (normalizing flow, │                                      │  (RUL regressor,      │
-│   PyTorch)          │                                      │   TensorFlow/Keras)   │
-│                     │                                      │  + ADR→C-MAPSS proxy  │
-│  → anomaly score    │                                      │  → RUL (cycles)       │
-│  → healthy/warning/ │                                      │  → urgency +          │
-│    anomaly          │                                      │    maintenance window │
-└─────────┬───────────┘                                      └───────────┬───────────┘
-          │                                                              │
-          └───────────────────────────┬──────────────────────────────────┘
-                                       ▼
-                          ┌─────────────────────────┐
-                          │  FUSION                 │
-                          │  priority decision matrix│
-                          │  (safety over planning) │
-                          └────────────┬────────────┘
-                                       ▼
+   robot                        EDGE (on-robot)              CLOUD (backend)
+ ┌────────────┐   /robot/state  ┌──────────────────┐        ┌────────────────────────┐
+ │ sensors +  │────────────────▶│  DETECTION        │        │  PREDICTION            │
+ │ 130×1100   │        │        │  MVT-Flow (PyTorch)│       │  Li et al. CNN (Keras) │
+ │ window     │        │        │  → healthy/warning/│       │  + ADR→C-MAPSS proxy   │
+ └────────────┘        │        │    anomaly         │       │  → RUL, urgency        │
+                       │        └────────┬───────────┘       └───────────┬────────────┘
+                       │      /edge/detection                 /cloud/prediction
+                       │                 │                                │
+                       └─────────────────┼────────────────────────────────┘
+                                          ▼
+                              ┌─────────────────────────┐   (CloudNode.decide)
+                              │  FUSION — decision matrix│
+                              │  (safety over planning)  │
+                              └────────────┬─────────────┘
+                                     /decision
+                                          ▼
               CONTINUE · MONITOR · PLAN · URGENT · STOP  (+ operator message)
 ```
+
+## Topics & messages
+
+| Topic | Message (`src/messages.py`) | Publisher | Payload |
+|-------|-----------------------------|-----------|---------|
+| `/robot/state`     | `StateMsg`      | robot     | 4 ADR channels + detection window |
+| `/edge/detection`  | `DetectionMsg`  | EdgeNode  | status, confidence, anomaly score |
+| `/cloud/prediction`| `PredictionMsg` | CloudNode | RUL cycles, urgency, window |
+| `/decision`        | `DecisionMsg`   | CloudNode | action, priority, operator message |
+
+Each message carries a `Header` (timestamp + robot id) and is JSON-serialisable, the way a
+ROS2 message serialises onto a topic.
 
 ## Why these components
 

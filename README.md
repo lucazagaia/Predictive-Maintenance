@@ -48,12 +48,18 @@ Given a sensor sample, the pipeline runs three stages and prints a maintenance a
 ## Architecture
 
 ```
-voraus-AD window ─▶ MVT-Flow detection ─┐
-                                        ├─▶ fusion matrix ─▶ CONTINUE / MONITOR /
-ADR sensor reading ─▶ Li et al. RUL ────┘                   PLAN / URGENT / STOP
+                    ┌─ EDGE (on-robot) ──┐   ┌─ CLOUD (backend) ────────┐
+/robot/state ──────▶│ MVT-Flow detection │──▶│ decision matrix (fusion) │──▶ /decision
+        │           └─ /edge/detection ──┘   │                          │    CONTINUE / MONITOR /
+        └──────────────────────────────────▶ │ Li et al. RUL            │    PLAN / URGENT / STOP
+                                              └─ /cloud/prediction ──────┘
 ```
 
-Two input modalities on purpose: detection consumes a raw multivariate window;
+This mirrors the thesis reference architecture (Abbildung 2): the latency-critical anomaly
+detector runs at the **edge** (on-robot), the heavier RUL model + decision matrix run in the
+**cloud**, and the stages exchange **typed messages over named topics** (`src/messages.py`,
+the software analogue of the thesis's ROS2 `state.msg`). It runs in one process — no ROS2
+dependency. Two input modalities on purpose: detection consumes a raw multivariate window;
 prediction consumes a 4-channel ADR reading. See [`docs/architecture.md`](docs/architecture.md)
 for the component rationale and the full decision matrix.
 
@@ -61,6 +67,9 @@ for the component rationale and the full decision matrix.
 Predictive-Maintenance/
 ├── run_demo.py            # ← single entry point ("run this to see it work")
 ├── src/
+│   ├── messages.py        # typed message contracts (ROS2 state.msg-style topics)
+│   ├── edge.py            # EdgeNode — on-robot real-time detection
+│   ├── cloud.py           # CloudNode — backend RUL prognostics + decision matrix
 │   ├── detection.py       # MVT-Flow inference interface (+ synthetic fallback)
 │   ├── mvt_flow_model.py  # MVT-Flow normalizing-flow model (PyTorch)
 │   ├── prediction.py      # RUL inference interface (ADR→C-MAPSS proxy + Keras CNN)
@@ -202,8 +211,11 @@ papers' best-reported figures.
 
 Framed as a roadmap, not an apology — these are the honest edges of a portfolio prototype:
 
-- **No ROS2 / edge integration.** Out of scope for this pass. No on-robot deployment,
-  no message-bus wiring.
+- **Edge/cloud boundary is modelled in software, not deployed.** The pipeline is split into
+  an edge detection node and a cloud prognostics/decision node exchanging typed messages over
+  named topics (`src/messages.py`, `src/edge.py`, `src/cloud.py`), mirroring the thesis's ROS2
+  design — but it runs in one process. Real ROS2 nodes, network transport, and on-robot
+  deployment are future work.
 - **Proxy data, not real ADR streams.** Detection uses voraus-AD, prediction uses
   C-MAPSS, and the ADR→C-MAPSS sensor mapping is a hand-built proxy. Real ADR
   run-to-failure data does not yet exist publicly (see *Data*).
