@@ -202,9 +202,6 @@ own benchmark domain.
 - Prediction: RUL CNN follows Li et al. (2018), *"Remaining useful life estimation in
   prognostics using deep convolution neural networks."*
 
-Both numbers are single-run, honestly presented as illustrative — not tuned to chase the
-papers' best-reported figures.
-
 ---
 
 ## Limitations & Next Steps
