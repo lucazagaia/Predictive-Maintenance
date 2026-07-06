@@ -69,8 +69,8 @@ Predictive-Maintenance/
 │   ├── train_rul.py           # RUL: raw C-MAPSS FD001 → preprocess → train → save
 │   ├── train_mvtflow.py       # detection: voraus parquet → windows → train → save
 │   └── calibrate_detection.py # reproduce detection thresholds from normal data
-├── models/                # MVT-Flow *.pt/*.pkl + voraus_thresholds.json
-│                          #   (RUL .keras is produced by scripts/train_rul.py)
+├── models/                # committed weights: MVT-Flow *.pt/*.pkl, voraus_thresholds.json,
+│                          #   li_et_al_cnn_corrected_best.keras (retrain via scripts/)
 ├── results/               # normalization_stats.json (written by train_rul.py)
 ├── data/samples/          # demo inputs: ADR readings, real C-MAPSS + voraus windows
 ├── notebooks/             # exploratory + the MVT-Flow Colab trainer (notebooks/README.md)
@@ -107,8 +107,8 @@ public proxies; swapping in real ADR data is future work, not a code change.
 ## How to run it
 
 ```bash
-# 1. clone, then create an environment (Python 3.10–3.11 recommended)
-python -m venv .venv && source .venv/bin/activate
+# 1. clone, then create an environment (Python 3.10–3.13; NOT 3.14 yet — no TensorFlow wheels)
+python3.13 -m venv .venv && source .venv/bin/activate
 
 # 2. install dependencies
 pip install -r requirements.txt
