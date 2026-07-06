@@ -15,10 +15,12 @@ useful life (RUL) estimation** → **fusion** → a maintenance recommendation
 
 This repository implements the **model and decision-logic layer** from a bachelor's
 thesis on predictive maintenance for autonomous last-mile delivery robots (TU Berlin,
-graded **1.3**). The thesis itself covered the process methodology and the edge/cloud
-reference architecture; this repo is an **independent implementation** that validates
-the ML approach behind it. The academic work and this code are separate efforts — this
-codebase is a personal project, not thesis deliverable code.
+graded **1.3**). The thesis is a conceptual *Vorgehensmodell*: it designed the process,
+the edge/cloud reference architecture, and the choice of ML/decision methods, but — as its
+own limitations note — built **no prototype** and validated the approach conceptually, not
+experimentally. This repo is that missing implementation: an **independent, personal
+project** that runs the thesis's chosen methods (MVT-Flow, Li et al. CNN) on the benchmark
+datasets it identifies. It is not thesis deliverable code.
 
 ---
 
@@ -90,7 +92,7 @@ Predictive-Maintenance/
 
 ## Data
 
-Be explicit about this, because it matters for interpreting the results:
+Data provenance matters for interpreting the results, so it is stated plainly here:
 
 - **Detection** is trained on **voraus-AD** (Brockmann et al., 2023) — a *real* robot
   anomaly-detection dataset (130 signals, pick-and-place manipulator), **not**
@@ -105,11 +107,11 @@ A small slice of the **real** C-MAPSS test set (3 windows + true RUL labels) is
 committed at `data/samples/cmapss_sample_*.npy` so the RUL model can be validated on
 genuine benchmark data, independently of the ADR proxy above.
 
-**Why proxy data?** As discussed in the thesis, a public run-to-failure dataset from
-real autonomous-delivery-robot sensor streams **does not yet exist**. This is a
-well-known, field-wide limitation of ADR predictive maintenance — not a shortcut
-specific to this project. The pipeline is therefore validated on the closest available
-public proxies; swapping in real ADR data is future work, not a code change.
+**Why proxy data?** As the thesis discusses, a public run-to-failure dataset from real
+autonomous-delivery-robot sensor streams **does not yet exist** — a well-known, field-wide
+limitation of ADR predictive maintenance, not a shortcut specific to this project. The
+pipeline is therefore validated on the closest available public proxies. Retraining on real
+ADR degradation data, once it exists, is the natural next step.
 
 ---
 
@@ -226,9 +228,9 @@ Framed as a roadmap, not an apology — these are the honest edges of a portfoli
 - **RUL confidence is a placeholder.** The CNN is a point-estimate regressor; the
   reported confidence is a constant, not calibrated uncertainty.
 
-**Next steps:** collect/obtain real ADR degradation data → replace the proxy mapping →
-add calibrated uncertainty (e.g. an aleatoric two-head RUL variant) → benchmark inference
-latency → then, and only then, consider edge/ROS2 integration.
+**Next steps:** obtain real ADR degradation data → replace the proxy mapping → add
+calibrated uncertainty (e.g. an aleatoric two-head RUL variant) → benchmark inference
+latency → deploy the edge/cloud nodes as real ROS2 nodes with network transport.
 
 ---
 
