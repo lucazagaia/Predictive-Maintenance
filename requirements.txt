@@ -1,0 +1,20 @@
+# Predictive-Maintenance — Python dependencies
+# Tested with Python 3.10–3.11. CPU-only is sufficient (inference, not training).
+
+# --- Core runtime: needed to run run_demo.py ---
+numpy>=1.24
+tensorflow>=2.16        # loads the Keras 3 native ".keras" RUL model
+torch>=2.0              # MVT-Flow normalizing-flow detector (CPU is fine for inference)
+scikit-learn>=1.6       # StandardScaler; scaler.pkl was fit with sklearn 1.6.x
+
+# --- Detection recalibration only (scripts/calibrate_detection.py, needs the parquet) ---
+pandas>=2.0
+pyarrow>=15.0
+
+# --- Notebooks / exploratory only (NOT required for the demo) ---
+matplotlib>=3.7
+seaborn>=0.12
+jupyter>=1.0
+
+# Verified working set (macOS arm64, Python 3.13):
+#   numpy 2.2.6 · tensorflow 2.21.0 · keras 3.15.0 · torch 2.12.1 · scikit-learn 1.6.1

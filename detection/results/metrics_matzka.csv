@@ -1,2 +1,0 @@
-Model,Test_Accuracy,Test_Precision,Test_Recall,Test_F1,Test_ROC_AUC,Num_Trees,Num_Explainable_Trees
-Random Forest (Matzka),0.9865,0.9555555555555556,0.6323529411764706,0.7610619469026548,0.9661696200219219,100,15

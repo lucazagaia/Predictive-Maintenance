@@ -1,23 +1,37 @@
-# Ignore cache and temp
+# --- Python ---
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# Ignore virtual environments
+# --- Virtual environments ---
 venv/
 .venv/
+env/
 
-# Ignore big binary files (you can add back specific ones manually)
-*.h5
-*.hdf5
+# --- OS ---
+.DS_Store
 
+# --- Reference papers (copyrighted — keep local, do not publish) ---
+pdfs/
+
+# --- Superseded / buggy notebook kept only for local reference ---
+old_notebooks/
+
+# --- Raw / large datasets (contents of data/ ignored; demo samples re-included below) ---
+data/*
+
+# --- Stray archives / logs / loose weights / arrays ---
 *.zip
 *.tar.gz
 *.log
+*.h5
+*.hdf5
 *.npy
 
-# Ignore full raw dataset folder (optional)
-data/
+# --- Keep the committed demo inputs (MUST come after the broad ignores above) ---
+!data/samples/
+!data/samples/sample_adr_readings.json
+!data/samples/*.npy
 
-# Ignore Jupyter notebooks in DEPRICATED folder
-notebooksDEPRICATED/
+# NOTE: model artifacts under models/ (*.keras, *.pt, *.pkl) are intentionally
+# tracked so the demo can run. Keep them small; retrain via notebooks/ if large.

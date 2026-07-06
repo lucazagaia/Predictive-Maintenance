@@ -1,6 +1,0 @@
-Failure Mode,Count,Accuracy,Precision,Recall,F1-Score
-TWF - Tool Wear Failure,10,0.0,0.0,0.0,0.0
-HDF - Heat Dissipation Failure,29,0.8620689655172413,1.0,0.8620689655172413,0.9259259259259259
-PWF - Power Failure,13,0.9230769230769231,1.0,0.9230769230769231,0.96
-OSF - Overstrain Failure,16,0.4375,1.0,0.4375,0.6086956521739131
-RNF - Random Failure,4,1.0,0.0,0.0,0.0
