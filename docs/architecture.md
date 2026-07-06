@@ -60,7 +60,7 @@ restatement of the data path; it deliberately does not reproduce thesis figures.
               immediate  urgent    soon      planned
 Anomaly       STOP       STOP      STOP      STOP
 Warning       URGENT     URGENT    MONITOR   MONITOR
-Healthy       PLAN       CONTINUE  CONTINUE  CONTINUE
+Healthy       PLAN       PLAN      CONTINUE  CONTINUE
 ```
 
 Safety first: an `anomaly` status triggers STOP regardless of RUL.

@@ -153,14 +153,18 @@ After training, re-run `python run_demo.py` for fully real, end-to-end results.
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
   Detection : healthy   score=-429147.5   [MVT-Flow]
-  -> Action : continue_operation
-  -> Operator: ✅ CONTINUE: normal operation
+  Prediction: RUL=123 cycles  urgency=urgent
+  -> Action : schedule_maintenance_soon   (healthy status, but short RUL → PLAN)
+  -> Operator: 📅 PLAN: schedule maintenance within the window
 
 SCENARIO: Degraded / fault    (detection window: real sample)
   Detection : anomaly   score=2726343.25  [MVT-Flow]
   -> Action : stop_and_inspect  (priority: critical)
   -> Operator: ⛔ STOP: halt the robot and inspect immediately
 ```
+
+The two rows exercise different parts of the thesis decision matrix: a healthy status with
+a short RUL yields `PLAN`, while a live anomaly overrides everything to `STOP`.
 
 **AUROC = 0.946** on a held-out normal/anomaly split (`scripts/train_mvtflow.py`, seed 42) —
 slightly above the paper's 0.936, which is a mean over 9 runs, so read this as a strong

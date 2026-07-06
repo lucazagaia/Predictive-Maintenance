@@ -26,7 +26,7 @@ The fusion layer uses a priority-based decision matrix:
 Status    ┌─────────────────────────────────────┐
 Anomaly   │ STOP     STOP     STOP     STOP     │ Critical
 Warning   │ URGENT   URGENT   MONITOR  MONITOR  │ High/Low
-Healthy   │ SCHEDULE CONTINUE CONTINUE CONTINUE │ Medium/Normal
+Healthy   │ PLAN     PLAN     CONTINUE CONTINUE │ Medium/Normal
           └─────────────────────────────────────┘
 
 Safety first: Anomalies always trigger immediate action, regardless of RUL.
@@ -110,11 +110,14 @@ class MaintenanceFusion:
             priority = "high"
             reasoning = f"Warning status with {urgency} RUL need ({rul_cycles} cycles)"
         
-        # RULE 3: LOW RUL + HEALTHY → Schedule maintenance soon
-        # Robot seems fine but running out of life - plan maintenance
-        elif urgency == "immediate":
+        # RULE 3: LOW RUL + HEALTHY → Schedule maintenance soon (PLAN)
+        # Robot seems fine but running out of life - plan maintenance.
+        # Matrix: Healthy × {Immediate, Urgent} → PLAN (both short-horizon RUL levels
+        # escalate, mirroring the Warning row; "urgent" must be included, not just
+        # "immediate", or a healthy + urgent case wrongly falls through to CONTINUE.
+        elif urgency in ("immediate", "urgent"):
             action = "schedule_maintenance_soon"
-            priority = "medium" 
+            priority = "medium"
             reasoning = f"Low RUL ({rul_cycles} cycles) but robot status OK"
         
         # RULE 4: WARNING + ADEQUATE RUL → Monitor closely
