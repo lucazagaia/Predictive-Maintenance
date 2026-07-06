@@ -1,6 +1,6 @@
 {
-  "warning_threshold": 385266048.0,
-  "anomaly_threshold": 390036512.0,
-  "calibrated_on": "40 real voraus-AD normal windows (p95/p99)",
-  "note": "MVT-Flow trained with n_timesteps=1; scores computed on full 1100-step windows"
+  "warning_threshold": -418991.59375,
+  "anomaly_threshold": -405125.0,
+  "auroc": 0.9462,
+  "calibrated_on": "410 held-out normal windows (p95/p99)"
 }
