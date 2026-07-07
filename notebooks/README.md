@@ -1,5 +1,13 @@
 # Notebooks
 
+**How the models were originally trained → how that was made reproducible.** The models were
+trained interactively on **Google Colab** (these notebooks — GPU runtime, Drive mounts,
+`gdown`). That setup is convenient for the compute but **Colab-locked**: `google.colab`,
+Drive mounts and `gdown` don't run on a normal machine, so a reviewer can't reproduce it as-is.
+The training was therefore **adapted into portable `scripts/`** that run anywhere with one
+command. Both are kept on purpose: the notebooks show *how it was done*, the scripts make it
+*reproducible by anyone*.
+
 Training a model has **two entry points on purpose**, matching where each model is best run:
 
 | | Canonical (local / CLI) | Colab (free GPU) |
