@@ -14,7 +14,7 @@ You only need FD001 — the folder must contain train_FD001.txt and RUL_FD001.tx
     pip install -r requirements.txt
     python scripts/train_rul.py --cmapss-dir /path/to/CMAPSSData
 
-Outputs (overwrites): models/li_et_al_cnn_corrected_best.keras + results/normalization_stats.json
+Outputs (overwrites): models/li_et_al_cnn_corrected_best.keras + models/normalization_stats.json
 """
 
 import argparse
@@ -146,7 +146,7 @@ def main():
         print(f"\nTEST RMSE = {rmse:.2f}   (Li et al. FD001 ≈ 12.6)")
 
     model_path = ROOT / "models" / "li_et_al_cnn_corrected_best.keras"
-    stats_path = ROOT / "results" / "normalization_stats.json"
+    stats_path = ROOT / "models" / "normalization_stats.json"
     model.save(model_path)
     stats_path.write_text(json.dumps(stats, indent=2))
     print(f"saved {model_path.relative_to(ROOT)} and {stats_path.relative_to(ROOT)}")

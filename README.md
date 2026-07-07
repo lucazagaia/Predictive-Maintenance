@@ -80,9 +80,8 @@ Predictive-Maintenance/
 │   ├── train_rul.py           # RUL: raw C-MAPSS FD001 → preprocess → train → save
 │   ├── train_mvtflow.py       # detection: voraus parquet → windows → train → save
 │   └── calibrate_detection.py # reproduce detection thresholds from normal data
-├── models/                # committed weights: MVT-Flow *.pt/*.pkl, voraus_thresholds.json,
-│                          #   li_et_al_cnn_corrected_best.keras (retrain via scripts/)
-├── results/               # normalization_stats.json (written by train_rul.py)
+├── models/                # all inference artifacts: MVT-Flow *.pt/*.pkl, RUL *.keras,
+│                          #   voraus_thresholds.json, normalization_stats.json
 ├── data/samples/          # demo inputs: ADR readings, real C-MAPSS + voraus windows
 ├── notebooks/             # exploratory + the MVT-Flow Colab trainer (notebooks/README.md)
 └── docs/                  # architecture notes
@@ -142,7 +141,7 @@ windowing, training and evaluation included.
 # RUL — Li et al. (2018) CNN on NASA C-MAPSS FD001 (~5 min, CPU is fine).
 # Download the free C-MAPSS set; point at the folder with train_FD001.txt / RUL_FD001.txt.
 python scripts/train_rul.py --cmapss-dir /path/to/CMAPSSData
-#   → writes models/li_et_al_cnn_corrected_best.keras + results/normalization_stats.json
+#   → writes models/li_et_al_cnn_corrected_best.keras + models/normalization_stats.json
 
 # Detection — MVT-Flow on the voraus-AD parquet (GPU recommended).
 # Locally:

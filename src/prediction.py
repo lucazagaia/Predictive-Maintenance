@@ -66,7 +66,7 @@ class PredictionInterface:
     def _load_normalization_stats(self) -> Dict:
         """Load the C-MAPSS normalization statistics used during training."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        stats_path = os.path.join(current_dir, "../results/normalization_stats.json")
+        stats_path = os.path.join(current_dir, "../models/normalization_stats.json")
         
         try:
             if os.path.exists(stats_path):
