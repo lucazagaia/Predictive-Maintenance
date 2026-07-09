@@ -3,10 +3,10 @@ Message contracts between pipeline stages — the software mirror of the thesis'
 ROS2 publish/subscribe design (Abbildung 3, `state.msg`; §4.2.3 Datenkommunikation).
 
 In the reference architecture the robot and the edge/cloud components talk over ROS2
-*topics*, each carrying a typed message. Here those messages are plain dataclasses so
-the pipeline has the same explicit contracts without a ROS2 dependency — a single
-process, but the same boundaries. Each message is JSON-serialisable (`to_dict`), the way
-a ROS2 message serialises onto a topic.
+*topics*, each carrying a typed message. Here those messages are plain dataclasses so the
+pipeline has the same explicit, typed contract at each producer→consumer boundary —
+without a ROS2 dependency. It runs in one process, but the boundaries are the same: the
+edge node *produces* a DetectionMsg, the cloud node *consumes* it to fuse a decision.
 
 Topic map (who publishes what):
 
@@ -16,7 +16,7 @@ Topic map (who publishes what):
     cloud node   --/decision--------->  DecisionMsg    (maintenance recommendation)
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -37,8 +37,8 @@ def _now() -> str:
 
 @dataclass
 class Header:
-    """ROS2-style header: a timestamp and the source robot id."""
-    stamp: str = field(default_factory=_now)
+    """ROS2-style header: a per-message timestamp and the source robot id."""
+    stamp: str = field(default_factory=_now)   # factory → a fresh timestamp per instance
     robot_id: str = "adr-001"
 
 
@@ -65,11 +65,6 @@ class StateMsg:
         return {"temperature": self.temperature, "vibration": self.vibration,
                 "pressure": self.pressure, "current": self.current}
 
-    def to_dict(self) -> dict:
-        d = {"header": asdict(self.header), **self.adr}
-        d["window"] = None if self.window is None else list(self.window.shape)  # shape only
-        return d
-
 
 @dataclass
 class DetectionMsg:
@@ -81,11 +76,6 @@ class DetectionMsg:
     model: str
     details: str = ""
 
-    def to_dict(self) -> dict:
-        return {"header": asdict(self.header), "status": self.status,
-                "confidence": self.confidence, "anomaly_score": self.anomaly_score,
-                "model": self.model, "details": self.details}
-
 
 @dataclass
 class PredictionMsg:
@@ -96,22 +86,12 @@ class PredictionMsg:
     maintenance_window: str
     confidence: float
 
-    def to_dict(self) -> dict:
-        return {"header": asdict(self.header), "rul_cycles": self.rul_cycles,
-                "urgency": self.urgency, "maintenance_window": self.maintenance_window,
-                "confidence": self.confidence}
-
 
 @dataclass
 class DecisionMsg:
-    """`/decision` — the maintenance recommendation (thesis Wartungshilfe / Abb. 1 Tabelle 1)."""
+    """`/decision` — the maintenance recommendation (thesis Wartungshilfe / Tabelle 1)."""
     header: Header
     action: str
     priority: str
     reasoning: str
     operator_message: str
-
-    def to_dict(self) -> dict:
-        return {"header": asdict(self.header), "action": self.action,
-                "priority": self.priority, "reasoning": self.reasoning,
-                "operator_message": self.operator_message}
