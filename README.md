@@ -60,10 +60,12 @@ Given a sensor sample, the pipeline runs three stages and prints a maintenance a
 This mirrors the thesis reference architecture (Abbildung 2): the latency-critical anomaly
 detector runs at the **edge** (on-robot), the heavier RUL model + decision matrix run in the
 **cloud**, and the stages exchange **typed messages over named topics** (`src/messages.py`,
-the software analogue of the thesis's ROS2 `state.msg`). It runs in one process — no ROS2
-dependency. Two input modalities on purpose: detection consumes a raw multivariate window;
-prediction consumes a 4-channel ADR reading. See [`docs/architecture.md`](docs/architecture.md)
-for the component rationale and the full decision matrix.
+the software analogue of the thesis's ROS2 `state.msg`). `run_demo.py` runs this in one
+process (no ROS2 needed), and the **same** detection/RUL/fusion code also ships as a real
+**ROS2 (Humble)** package — genuine `rclpy` nodes over DDS topics, runnable via Docker; see
+[`docs/ROS2.md`](docs/ROS2.md). Two input modalities on purpose: detection consumes a raw
+multivariate window; prediction consumes a 4-channel ADR reading. See
+[`docs/architecture.md`](docs/architecture.md) for the component rationale and decision matrix.
 
 ```
 Predictive-Maintenance/
@@ -85,8 +87,10 @@ Predictive-Maintenance/
 │                          #   scaler_voraus_ad.pkl, rul_cnn.pt, voraus_thresholds.json,
 │                          #   normalization_stats.json
 ├── data/samples/          # demo inputs: ADR readings, real C-MAPSS + voraus windows
+├── ros2_ws/               # real ROS2 (Humble) package: rclpy nodes + custom .msg (docs/ROS2.md)
+├── Dockerfile             # ROS2 + PyTorch image to build/run the node graph
 ├── notebooks/             # exploratory + the MVT-Flow Colab trainer (notebooks/README.md)
-└── docs/                  # architecture notes
+└── docs/                  # architecture + ROS2 notes
 ```
 
 ---
@@ -212,11 +216,10 @@ own benchmark domain.
 
 Framed as a roadmap, not an apology — these are the honest edges of a portfolio prototype:
 
-- **Edge/cloud boundary is modelled in software, not deployed.** The pipeline is split into
-  an edge detection node and a cloud prognostics/decision node exchanging typed messages over
-  named topics (`src/messages.py`, `src/edge.py`, `src/cloud.py`), mirroring the thesis's ROS2
-  design — but it runs in one process. Real ROS2 nodes, network transport, and on-robot
-  deployment are future work.
+- **Real ROS2 exists, but not on hardware.** The pipeline ships as real `rclpy` nodes over
+  DDS topics (`ros2_ws/`, run via Docker — see `docs/ROS2.md`), so the edge/cloud boundary is
+  genuine ROS2, not a simulation of it. What's still missing is deployment on an actual robot
+  (real sensor drivers, a Gazebo/hardware bring-up, network-distributed edge and cloud hosts).
 - **Proxy data, not real ADR streams.** Detection uses voraus-AD, prediction uses
   C-MAPSS, and the ADR→C-MAPSS sensor mapping is a hand-built proxy. Real ADR
   run-to-failure data does not yet exist publicly (see *Data*).
@@ -232,7 +235,7 @@ Framed as a roadmap, not an apology — these are the honest edges of a portfoli
 
 **Next steps:** obtain real ADR degradation data → replace the proxy mapping → add
 calibrated uncertainty (e.g. an aleatoric two-head RUL variant) → benchmark inference
-latency → deploy the edge/cloud nodes as real ROS2 nodes with network transport.
+latency → run the ROS2 nodes on real robot/edge/cloud hosts with live sensor drivers.
 
 ---
 

@@ -17,6 +17,11 @@ pdfs/
 # --- Superseded / buggy notebook kept only for local reference ---
 old_notebooks/
 
+# --- colcon build artifacts (ROS2 workspace) ---
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
 # --- Raw / large datasets (contents of data/ ignored; demo samples re-included below) ---
 data/*
 
