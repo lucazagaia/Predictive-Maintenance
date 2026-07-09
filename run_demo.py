@@ -74,7 +74,7 @@ def main():
     cloud = CloudNode()
 
     if not cloud.predictor.model_loaded:
-        print("\n⚠️  RUL model not found — showing PLACEHOLDER predictions below.")
+        print("\nRUL model not found — showing PLACEHOLDER predictions below.")
         print("    Train the real model (~5 min on CPU):")
         print("    python scripts/train_rul.py --cmapss-dir <path-to-CMAPSS-FD001>\n")
 

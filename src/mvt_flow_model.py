@@ -279,7 +279,7 @@ class MVTFlowDetector:
         with open(scaler_path, 'rb') as f:
             self.scaler = pickle.load(f)
         
-        print(f"✅ MVT-Flow detector loaded successfully")
+        print(f"MVT-Flow detector loaded successfully")
         print(f"   Device: {self.device}")
         print(f"   Signals: {n_signals}, Timesteps: {n_timesteps}")
     

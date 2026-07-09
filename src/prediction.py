@@ -68,29 +68,29 @@ class PredictionInterface:
                 with open(stats_path, 'r') as f:
                     return json.load(f)
             else:
-                print(f"⚠️  Normalization stats not found: {stats_path}")
+                print(f"Normalization stats not found: {stats_path}")
                 return None
         except Exception as e:
-            print(f"⚠️  Failed to load normalization stats: {e}")
+            print(f"Failed to load normalization stats: {e}")
             return None
     
     def _load_rul_model(self):
         """Load the trained RUL model."""
         try:
             if os.path.exists(self.model_path):
-                print(f"🔄 Loading trained RUL model: {os.path.basename(self.model_path)}")
+                print(f"Loading trained RUL model: {os.path.basename(self.model_path)}")
                 self.model = tf.keras.models.load_model(self.model_path)
                 self.model_loaded = True
-                print(f"✅ RUL model loaded successfully!")
+                print(f"RUL model loaded successfully!")
                 print(f"   Model input shape: {self.model.input_shape}")
                 print(f"   Model output shape: {self.model.output_shape}")
             else:
-                print(f"⚠️  Model file not found: {self.model_path}")
-                print("🔄 Using fallback placeholder prediction")
+                print(f"Model file not found: {self.model_path}")
+                print("Using fallback placeholder prediction")
                 self.model_loaded = False
         except Exception as e:
-            print(f"⚠️  Failed to load RUL model: {e}")
-            print("🔄 Using fallback placeholder prediction")
+            print(f"Failed to load RUL model: {e}")
+            print("Using fallback placeholder prediction")
             self.model_loaded = False
     
     def get_maintenance_planning(self, adr_sensors: Dict[str, float]) -> Dict:
@@ -180,7 +180,7 @@ class PredictionInterface:
         """
         # Handle NaN or invalid RUL values
         if np.isnan(rul_cycles) or rul_cycles < 0:
-            print(f"⚠️  Invalid RUL value: {rul_cycles}, using default")
+            print(f"Invalid RUL value: {rul_cycles}, using default")
             rul_cycles = 300.0
         
         if rul_cycles < 50:
@@ -293,7 +293,7 @@ class PredictionInterface:
             return cmapss_normalized
         else:
             # Fallback: return as-is if normalization stats not available
-            print("⚠️  Using raw features without normalization")
+            print("Using raw features without normalization")
             return cmapss_raw
     
     def _normalize_features(self, features: np.ndarray) -> np.ndarray:
@@ -361,7 +361,7 @@ class PredictionInterface:
                 
                 if current_history_len == 0:
                     # No data yet - return default value
-                    print("⚠️  No sensor history available yet")
+                    print("No sensor history available yet")
                     return 300.0
                 
                 if current_history_len < self.window_size:
@@ -386,10 +386,10 @@ class PredictionInterface:
                 return rul_prediction
                 
             except Exception as e:
-                print(f"⚠️  Model prediction failed: {e}")
+                print(f"Model prediction failed: {e}")
                 print(f"   Sensor history length: {len(self.sensor_history)}")
                 print(f"   Expected input shape: (1, {self.window_size}, 17)")
-                print("🔄 Falling back to placeholder prediction")
+                print("Falling back to placeholder prediction")
                 
         # FALLBACK: deterministic estimate, used only if the Keras model failed to load
         # (e.g. a TensorFlow version mismatch). Worse mean health → less remaining life.

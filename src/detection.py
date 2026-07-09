@@ -72,10 +72,10 @@ class MVTFlowDetectionInterface:
                 n_timesteps=window_size
             )
             self.model_loaded = True
-            print("✅ MVT-Flow detection interface initialized (real model)")
+            print("MVT-Flow detection interface initialized (real model)")
         except Exception as e:
-            print(f"⚠️  MVT-Flow weights not loaded ({e})")
-            print("🔄 Falling back to synthetic detector (illustrative, not real inference)")
+            print(f"MVT-Flow weights not loaded ({e})")
+            print("Falling back to synthetic detector (illustrative, not real inference)")
             self.model_loaded = False
             self.detector = None
 
@@ -95,7 +95,7 @@ class MVTFlowDetectionInterface:
                 thr = json.loads(thr_path.read_text())
                 self.warning_threshold = float(thr["warning_threshold"])
                 self.anomaly_threshold = float(thr["anomaly_threshold"])
-                print(f"📊 Loaded calibrated thresholds: "
+                print(f"Loaded calibrated thresholds: "
                       f"warn={self.warning_threshold:.0f}  anomaly={self.anomaly_threshold:.0f}")
         else:
             self.mode = "synthetic-fallback"
@@ -138,7 +138,7 @@ class MVTFlowDetectionInterface:
             buffer_sizes = [len(buf) for buf in self.sensor_buffers.values()]
             if min(buffer_sizes) >= self.window_size:
                 self.buffer_filled = True
-                print(f"✅ Buffer filled: {self.window_size} timesteps ready")
+                print(f"Buffer filled: {self.window_size} timesteps ready")
         
         # Only make predictions once buffer is filled
         if self.buffer_filled:
@@ -309,10 +309,10 @@ class MVTFlowDetectionInterface:
             percentile: Percentile for threshold (default: 95 = allow 5% false positives)
         """
         if not self.model_loaded:
-            print("⚠️  Model not loaded, cannot calibrate")
+            print("Model not loaded, cannot calibrate")
             return
         
-        print(f"🔧 Calibrating thresholds on {len(normal_data)} normal samples...")
+        print(f"Calibrating thresholds on {len(normal_data)} normal samples...")
         
         # Compute anomaly scores for all normal samples
         scores = self.detector.predict_anomaly_score(normal_data)
@@ -322,7 +322,7 @@ class MVTFlowDetectionInterface:
         self.warning_threshold = self.normal_threshold
         self.anomaly_threshold = self.normal_threshold + 500.0
 
-        print(f"✅ Threshold calibrated: {self.normal_threshold:.2f}")
+        print(f"Threshold calibrated: {self.normal_threshold:.2f}")
         print(f"   Mean normal score: {scores.mean():.2f} ± {scores.std():.2f}")
         print(f"   {percentile}th percentile: {self.normal_threshold:.2f}")
     
@@ -331,4 +331,4 @@ class MVTFlowDetectionInterface:
         for buffer in self.sensor_buffers.values():
             buffer.clear()
         self.buffer_filled = False
-        print("🔄 Buffer reset")
+        print("Buffer reset")
