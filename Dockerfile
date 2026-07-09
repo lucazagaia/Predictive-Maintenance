@@ -2,9 +2,13 @@
 # ROS2 Humble (Ubuntu 22.04, Python 3.10) + the CPU PyTorch stack the nodes wrap.
 FROM ros:humble
 
-# ML dependencies for the wrapped pipeline (CPU-only torch).
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
- && pip install --no-cache-dir "numpy>=1.24" "scikit-learn>=1.6"
+# ros:humble is minimal (ros_core): add pip + ROS build tools (colcon, rosidl generators),
+# then the CPU PyTorch stack the nodes wrap.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3-pip ros-dev-tools ros-humble-rosidl-default-generators \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+ && pip3 install --no-cache-dir "numpy>=1.24" "scikit-learn>=1.6"
 
 # Copy the repo (src/, models/, data/, ros2_ws/) and point the nodes at it.
 WORKDIR /app
