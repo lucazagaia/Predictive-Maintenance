@@ -20,7 +20,7 @@ RUN . /opt/ros/humble/setup.sh && colcon build
 
 # ML dependencies for the wrapped pipeline (CPU-only torch), installed after the build.
 RUN pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
- && pip3 install --no-cache-dir "numpy>=1.24" "scikit-learn>=1.6"
+ && pip3 install --no-cache-dir "numpy>=1.24" "scikit-learn==1.6.1"
 
 ENTRYPOINT ["/app/ros2_ws/entrypoint.sh"]
 CMD ["ros2", "launch", "adr_pdm", "pdm.launch.py"]
