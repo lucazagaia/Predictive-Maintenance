@@ -1,15 +1,15 @@
 {
-  "_comment": "Illustrative ADR (autonomous delivery robot) sensor readings for the RUL side of the demo. These are hand-set proxy values, not measurements from a real robot — see README 'Data'. Units: temperature [C], vibration [g], pressure [bar], current [A].",
+  "_comment": "Illustrative ADR (autonomous delivery robot) sensor readings for the RUL side of the demo. These are hand-set proxy values, not measurements from a real robot — see README 'Data'. Units: temperature [C], vibration [g], torque [Nm], current [A].",
   "healthy": {
     "temperature": 72.0,
     "vibration": 0.20,
-    "pressure": 15.0,
+    "torque": 12.0,
     "current": 9.5
   },
   "degraded": {
     "temperature": 88.0,
     "vibration": 1.10,
-    "pressure": 12.5,
+    "torque": 28.0,
     "current": 14.5
   }
 }

@@ -98,9 +98,10 @@ Data provenance matters for interpreting the results, so it is stated plainly he
   autonomous-delivery-robot data.
 - **Prediction** is trained on **NASA C-MAPSS FD001** — aircraft **turbofan**
   run-to-failure data, a standard RUL benchmark, again not robot data.
-- The 4-channel ADR reading fed to the RUL stage is mapped to C-MAPSS features by a
-  **hand-built proxy ("virtual sensor abstraction")** in `src/prediction.py`. This is a
-  deliberate stand-in, **not** a learned or physically-calibrated mapping.
+- The 4-channel ADR reading (temperature, vibration, torque, current — proprioceptive
+  sensors from the thesis's ADR sensor set) fed to the RUL stage is mapped to C-MAPSS
+  features by a **hand-built proxy ("virtual sensor abstraction")** in `src/prediction.py`.
+  This is a deliberate stand-in, **not** a learned or physically-calibrated mapping.
 
 A small slice of the **real** C-MAPSS test set (3 windows + true RUL labels) is
 committed at `data/samples/cmapss_sample_*.npy` so the RUL model can be validated on
@@ -163,7 +164,7 @@ After training, re-run `python run_demo.py` for fully real, end-to-end results.
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
   Detection : healthy   score=-429147.5   [MVT-Flow]
-  Prediction: RUL=123 cycles  urgency=urgent
+  Prediction: RUL=56 cycles  urgency=urgent
   -> Action : schedule_maintenance_soon   (healthy status, but short RUL → PLAN)
   -> Operator: 📅 PLAN: schedule maintenance within the window
 

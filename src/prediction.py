@@ -114,7 +114,7 @@ class PredictionInterface:
         
         Args:
             adr_sensors: Raw ADR sensor readings
-                        {"temperature": 75.2, "vibration": 0.3, "pressure": 14.8, "current": 10.1}
+                        {"temperature": 75.2, "vibration": 0.3, "torque": 18.0, "current": 10.1}
             
         Returns:
             Maintenance planning information:
@@ -219,8 +219,8 @@ class PredictionInterface:
         
         INPUT (ADR Robot Sensors):
         - temperature: Thermal condition [°C]
-        - vibration: Mechanical stress [g]  
-        - pressure: Hydraulic health [bar]
+        - vibration: Mechanical stress [g]
+        - torque: Mechanical load [Nm]
         - current: Electrical load [A]
         
         OUTPUT (C-MAPSS Format - 17 features matching training data):
@@ -236,13 +236,13 @@ class PredictionInterface:
         # Extract raw ADR sensor values
         temp = adr_sensors["temperature"]
         vibr = adr_sensors["vibration"]
-        pres = adr_sensors["pressure"] 
+        torq = adr_sensors["torque"]
         curr = adr_sensors["current"]
-        
+
         # Normalize ADR sensors to [0,1] range first
         temp_norm = np.clip(temp / 100.0, 0, 1)      # 0-100°C
         vibr_norm = np.clip(vibr * 2.0, 0, 1)        # 0-0.5g scaled
-        pres_norm = np.clip(pres / 15.0, 0, 1)       # 0-15 bar
+        torq_norm = np.clip(torq / 40.0, 0, 1)       # 0-40 Nm
         curr_norm = np.clip(curr / 12.0, 0, 1)       # 0-12A
         
         # Map normalized ADR sensors to C-MAPSS sensor value ranges
@@ -251,7 +251,7 @@ class PredictionInterface:
         # Operational settings (3). op_setting_3 is constant (100.0) in FD001, so it
         # normalizes to 0 — but the trained model expects it in the feature vector.
         setting_1 = -0.0087 + temp_norm * (0.0087 - (-0.0087))      # -0.0087 to 0.0087
-        setting_2 = -0.0006 + pres_norm * (0.0007 - (-0.0006))      # -0.0006 to 0.0007
+        setting_2 = -0.0006 + torq_norm * (0.0007 - (-0.0006))      # -0.0006 to 0.0007
         setting_3 = 100.0                                            # constant in FD001
 
         # Temperature sensors (2, 3, 4, 7, 8)
@@ -261,10 +261,10 @@ class PredictionInterface:
         sensor_7 = 549.85 + temp_norm * (556.06 - 549.85)                          # Total temp at HPT outlet
         sensor_8 = 2387.89 + temp_norm * 0.1 * (2388.56 - 2387.89)                 # Pressure at HPC outlet (minimal variation)
 
-        # Pressure sensors (9, 11, 12)
-        sensor_9 = 9021.73 + pres_norm * (9244.59 - 9021.73)             # Physical fan speed
-        sensor_11 = 46.8 + pres_norm * (48.53 - 46.8)                    # Physical core speed
-        sensor_12 = 518.69 + pres_norm * (523.76 - 518.69)               # Static pressure at HPC outlet
+        # Load-driven sensors (9, 11, 12) — torque as a proxy for mechanical load
+        sensor_9 = 9021.73 + torq_norm * (9244.59 - 9021.73)             # Physical fan speed
+        sensor_11 = 46.8 + torq_norm * (48.53 - 46.8)                    # Physical core speed
+        sensor_12 = 518.69 + torq_norm * (523.76 - 518.69)               # Static pressure at HPC outlet
 
         # Speed/vibration sensors (13, 14, 15)
         sensor_13 = 2387.88 + vibr_norm * 0.1 * (2388.56 - 2387.88)      # Corrected fan speed
@@ -413,18 +413,18 @@ if __name__ == "__main__":
     healthy_sensors = {
         "temperature": 72.0,
         "vibration": 0.2,
-        "pressure": 15.0,
+        "torque": 12.0,
         "current": 9.5
     }
-    
+
     result = predictor.get_maintenance_planning(healthy_sensors)
     print("Healthy sensors:", result)
-    
-    # Test with degraded readings  
+
+    # Test with degraded readings
     degraded_sensors = {
         "temperature": 82.0,  # Higher temperature
         "vibration": 0.8,     # Higher vibration
-        "pressure": 13.5,     # Lower pressure  
+        "torque": 28.0,       # Higher torque (friction / wear)
         "current": 11.5       # Higher current
     }
     

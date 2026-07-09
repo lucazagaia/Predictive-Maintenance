@@ -55,7 +55,7 @@ class StateMsg:
     header: Header
     temperature: float          # [°C]
     vibration: float            # [g]
-    pressure: float             # [bar]
+    torque: float               # [Nm]
     current: float              # [A]
     window: Optional[np.ndarray] = None   # (n_signals, n_timesteps) for detection
 
@@ -63,7 +63,7 @@ class StateMsg:
     def adr(self) -> dict:
         """The 4-channel ADR reading the RUL proxy expects."""
         return {"temperature": self.temperature, "vibration": self.vibration,
-                "pressure": self.pressure, "current": self.current}
+                "torque": self.torque, "current": self.current}
 
 
 @dataclass

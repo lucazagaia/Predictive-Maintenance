@@ -101,7 +101,7 @@ def main():
         print(f"SCENARIO: {title}   (detection window: {provenance})")
         print("-" * 70)
         print(f"  {TOPICS['state']:<19} temp={state.temperature} vib={state.vibration} "
-              f"pres={state.pressure} curr={state.current}")
+              f"torq={state.torque} curr={state.current}")
         print(f"  [edge]  {TOPICS['detection']:<18} {detection.status:<8} "
               f"score={detection.anomaly_score}  [{detection.model}]")
         print(f"  [cloud] {TOPICS['prediction']:<18} RUL={prediction.rul_cycles} cycles  "
