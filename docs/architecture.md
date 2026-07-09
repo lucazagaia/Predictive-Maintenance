@@ -11,7 +11,7 @@ deployment. The diagram is a conceptual restatement and does not reproduce thesi
    robot                        EDGE (on-robot)              CLOUD (backend)
  ┌────────────┐   /robot/state  ┌──────────────────┐        ┌────────────────────────┐
  │ sensors +  │────────────────▶│  DETECTION        │        │  PREDICTION            │
- │ 130×1100   │        │        │  MVT-Flow (PyTorch)│       │  Li et al. CNN (Keras) │
+ │ 130×1100   │        │        │  MVT-Flow (PyTorch)│       │  Li et al. CNN (PyTorch)│
  │ window     │        │        │  → healthy/warning/│       │  + ADR→C-MAPSS proxy   │
  └────────────┘        │        │    anomaly         │       │  → RUL, urgency        │
                        │        └────────┬───────────┘       └───────────┬────────────┘

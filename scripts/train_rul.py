@@ -4,8 +4,8 @@ train_rul.py — end-to-end RUL training, from raw C-MAPSS FD001 to a saved mode
 
 One command does everything: preprocessing → windowing → training → evaluation → save.
 Faithful reimplementation of:
-    Li, Ding, Sun (2018), "Remaining useful life estimation in prognostics using
-    deep convolution neural networks", Reliability Eng. & System Safety 172, 1–11.
+    Li, Ding, Sun (2018), "Remaining useful life estimation in prognostics using deep
+    convolution neural networks", Reliability Eng. & System Safety 172, 1–11.
 
 Get the data (free): NASA C-MAPSS "Turbofan Engine Degradation Simulation" set.
 You only need FD001 — the folder must contain train_FD001.txt and RUL_FD001.txt
@@ -14,16 +14,18 @@ You only need FD001 — the folder must contain train_FD001.txt and RUL_FD001.tx
     pip install -r requirements.txt
     python scripts/train_rul.py --cmapss-dir /path/to/CMAPSSData
 
-Outputs (overwrites): models/li_et_al_cnn_corrected_best.keras + models/normalization_stats.json
+Outputs (overwrites): models/rul_cnn.pt + models/normalization_stats.json
 """
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
 
 # --- Feature selection (why): FD001 runs at a single operating condition, so 7 of the
 # 21 sensors are flat and carry no degradation signal. Li et al. keep 14 informative
@@ -97,20 +99,6 @@ def make_test_windows(df):
     return np.asarray(X, "float32")
 
 
-def build_li_cnn(input_shape):
-    """Li et al. (2018) Table: 4×Conv(FN=10,FL=10) + 1×Conv(1,3), tanh, then FC(100)+FC(1)."""
-    from tensorflow.keras import layers, models
-    m = models.Sequential([layers.Input(shape=input_shape)], name="li_et_al_cnn")
-    for i in range(4):
-        m.add(layers.Conv1D(10, 10, padding="same", activation="tanh", name=f"conv{i+1}"))
-    m.add(layers.Conv1D(1, 3, padding="same", activation="tanh", name="conv5_combine"))
-    m.add(layers.Flatten())
-    m.add(layers.Dropout(0.5))
-    m.add(layers.Dense(100, activation="tanh"))
-    m.add(layers.Dense(1, activation="linear", name="rul"))
-    return m
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cmapss-dir", required=True, help="folder with train_FD001.txt / RUL_FD001.txt")
@@ -119,9 +107,10 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
-    import tensorflow as tf
-    from tensorflow.keras import optimizers, callbacks
-    tf.random.set_seed(args.seed); np.random.seed(args.seed)
+    import torch
+    from torch.utils.data import DataLoader, TensorDataset
+    from rul_model import LiCNN
+    torch.manual_seed(args.seed); np.random.seed(args.seed)
 
     cmapss = Path(args.cmapss_dir).expanduser()
     train_df, test_df, rul_true = load_fd001(cmapss)
@@ -131,23 +120,39 @@ def main():
     Xtr, ytr = make_train_windows(normalize(train_df, stats))
     print(f"train windows: {Xtr.shape}  (features = {len(FEATURE_COLUMNS)})")
 
-    model = build_li_cnn(Xtr.shape[1:])
-    model.compile(optimizer=optimizers.Adam(1e-3), loss="mse", metrics=["mae"])
-    # Paper LR schedule: 1e-3 for the first 200 epochs, then 1e-4.
-    lr_cb = callbacks.LearningRateScheduler(lambda ep, lr: 1e-3 if ep < 200 else 1e-4)
-    model.fit(Xtr, ytr, validation_split=0.1, epochs=args.epochs,
-              batch_size=args.batch_size, callbacks=[lr_cb], verbose=2)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = LiCNN(n_features=Xtr.shape[2], window=Xtr.shape[1]).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+    loss_fn = torch.nn.MSELoss()
+    loader = DataLoader(TensorDataset(torch.from_numpy(Xtr), torch.from_numpy(ytr)),
+                        batch_size=args.batch_size, shuffle=True)
 
-    # Evaluate against the official test RUL labels, if test file is present.
+    for epoch in range(args.epochs):
+        # Paper LR schedule: 1e-3 for the first 200 epochs, then 1e-4.
+        for g in opt.param_groups:
+            g["lr"] = 1e-3 if epoch < 200 else 1e-4
+        model.train(); running = 0.0
+        for xb, yb in loader:
+            xb, yb = xb.to(device), yb.to(device)
+            loss = loss_fn(model(xb), yb)
+            opt.zero_grad(); loss.backward(); opt.step()
+            running += loss.item() * len(xb)
+        if epoch % 25 == 0 or epoch == args.epochs - 1:
+            print(f"  epoch {epoch:3d}  mse={running / len(Xtr):.2f}")
+
+    # Evaluate against the official test RUL labels, if the test file is present.
     if test_df is not None:
         Xte = make_test_windows(normalize(test_df, stats))
-        pred = np.clip(model.predict(Xte, verbose=0).ravel(), 0, None)
+        model.eval()
+        with torch.no_grad():
+            pred = model(torch.from_numpy(Xte).to(device)).cpu().numpy()
+        pred = np.clip(pred, 0, None)
         rmse = float(np.sqrt(np.mean((pred - rul_true) ** 2)))
         print(f"\nTEST RMSE = {rmse:.2f}   (Li et al. FD001 ≈ 12.6)")
 
-    model_path = ROOT / "models" / "li_et_al_cnn_corrected_best.keras"
+    model_path = ROOT / "models" / "rul_cnn.pt"
     stats_path = ROOT / "models" / "normalization_stats.json"
-    model.save(model_path)
+    torch.save(model.state_dict(), model_path)
     stats_path.write_text(json.dumps(stats, indent=2))
     print(f"saved {model_path.relative_to(ROOT)} and {stats_path.relative_to(ROOT)}")
 

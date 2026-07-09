@@ -1,20 +1,19 @@
 # Predictive-Maintenance — Python dependencies
-# Tested with Python 3.10–3.11. CPU-only is sufficient (inference, not training).
+# CPU-only is sufficient for inference (run_demo.py) and for training the RUL model;
+# the MVT-Flow detector trains fastest on a GPU (see notebooks/).
 
 # --- Core runtime: needed to run run_demo.py ---
 numpy>=1.24
-tensorflow>=2.16        # loads the Keras 3 native ".keras" RUL model
-torch>=2.0              # MVT-Flow normalizing-flow detector (CPU is fine for inference)
-scikit-learn>=1.6       # StandardScaler; scaler.pkl was fit with sklearn 1.6.x
+torch>=2.2              # both models are PyTorch: MVT-Flow detector + Li et al. RUL CNN
+scikit-learn>=1.6       # StandardScaler for the MVT-Flow scaler.pkl
 
-# --- Detection recalibration only (scripts/calibrate_detection.py, needs the parquet) ---
-pandas>=2.0
-pyarrow>=15.0
+# --- Training / recalibration only (scripts/, need the raw datasets) ---
+pandas>=2.0             # C-MAPSS parsing (train_rul.py) + voraus windowing
+pyarrow>=15.0           # reads the voraus-AD parquet (train_mvtflow.py, calibrate_detection.py)
 
 # --- Notebooks / exploratory only (NOT required for the demo) ---
 matplotlib>=3.7
 seaborn>=0.12
 jupyter>=1.0
 
-# Verified working set (macOS arm64, Python 3.13):
-#   numpy 2.2.6 · tensorflow 2.21.0 · keras 3.15.0 · torch 2.12.1 · scikit-learn 1.6.1
+# Verified working set (macOS arm64, Python 3.13): numpy 2.2.6 · torch 2.12.1 · scikit-learn 1.6.1

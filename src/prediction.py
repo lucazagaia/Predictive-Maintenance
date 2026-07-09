@@ -11,11 +11,17 @@ convolution neural networks", Reliability Engineering & System Safety 172, 1–1
 """
 
 import numpy as np
-import tensorflow as tf
+import torch
+import sys
 from datetime import datetime
 from typing import Dict
+from pathlib import Path
 import os
 import json
+
+# rul_model.py lives alongside this file in src/
+sys.path.append(str(Path(__file__).parent))
+from rul_model import LiCNN
 
 
 class PredictionInterface:
@@ -32,8 +38,8 @@ class PredictionInterface:
         Initialize RUL prediction interface with trained model.
         
         Args:
-            model_path: Path to trained Li et al. CNN model (.keras file)
-                       If None, uses default model from ../models/
+            model_path: Path to the trained Li et al. CNN weights (PyTorch .pt state_dict).
+                       If None, uses ../models/rul_cnn.pt
             window_size: Number of historical readings to maintain (default: 30)
         """
         self.model = None
@@ -44,12 +50,12 @@ class PredictionInterface:
         # The model expects (batch, 30, 17) - 30 timesteps with 17 features each
         self.sensor_history = []
         
-        # Use default model if no path provided
+        # Use default model if no path provided. The RUL model is a Li et al. (2018) FD001
+        # CNN (17 features = 3 operational settings + the paper's 14 sensors), trained by
+        # scripts/train_rul.py and stored as a PyTorch state_dict.
         if model_path is None:
-            # Li et al. (2018) FD001 model as trained by prediction_01_li_cnn_modeling.ipynb:
-            # 17 features = 3 operational settings + the paper's exact 14 sensors.
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            model_path = os.path.join(current_dir, "../models/li_et_al_cnn_corrected_best.keras")
+            model_path = os.path.join(current_dir, "../models/rul_cnn.pt")
         
         self.model_path = model_path
         
@@ -75,15 +81,15 @@ class PredictionInterface:
             return None
     
     def _load_rul_model(self):
-        """Load the trained RUL model."""
+        """Load the trained RUL model (PyTorch state_dict into a LiCNN)."""
         try:
             if os.path.exists(self.model_path):
                 print(f"Loading trained RUL model: {os.path.basename(self.model_path)}")
-                self.model = tf.keras.models.load_model(self.model_path)
+                self.model = LiCNN(n_features=17, window=self.window_size)
+                self.model.load_state_dict(torch.load(self.model_path, map_location="cpu"))
+                self.model.eval()
                 self.model_loaded = True
-                print(f"RUL model loaded successfully!")
-                print(f"   Model input shape: {self.model.input_shape}")
-                print(f"   Model output shape: {self.model.output_shape}")
+                print("RUL model loaded successfully (17 features x 30 timesteps)")
             else:
                 print(f"Model file not found: {self.model_path}")
                 print("Using fallback placeholder prediction")
@@ -158,14 +164,15 @@ class PredictionInterface:
 
         This bypasses the ADR->C-MAPSS proxy so the model can be validated on REAL
         C-MAPSS test windows (see data/samples/cmapss_sample_X.npy). Returns RUL in
-        cycles, or NaN if the real Keras model is not loaded.
+        cycles, or NaN if the model is not loaded.
         """
         if not (self.model_loaded and self.model is not None):
             return float("nan")
         w = np.asarray(window, dtype="float32")
         if w.ndim == 2:                          # (30, 17) -> (1, 30, 17)
             w = w[np.newaxis, ...]
-        rul = float(self.model.predict(w, verbose=0)[0][0])
+        with torch.no_grad():
+            rul = float(self.model(torch.from_numpy(w)).item())
         return float(np.clip(rul, 10, 500))
 
     def _convert_to_maintenance_plan(self, rul_cycles: float) -> Dict:
@@ -375,14 +382,15 @@ class PredictionInterface:
                     time_series = np.array(self.sensor_history[-self.window_size:])
                 
                 # Reshape for model input: (1, window_size, n_features)
-                model_input = time_series.reshape(1, self.window_size, time_series.shape[-1])
-                
-                # Get prediction from trained model
-                rul_prediction = self.model.predict(model_input, verbose=0)[0][0]
-                
+                model_input = time_series.reshape(1, self.window_size, time_series.shape[-1]).astype("float32")
+
+                # Get prediction from the trained model
+                with torch.no_grad():
+                    rul_prediction = float(self.model(torch.from_numpy(model_input)).item())
+
                 # Ensure realistic RUL range (10-500 cycles)
                 rul_prediction = float(np.clip(rul_prediction, 10, 500))
-                
+
                 return rul_prediction
                 
             except Exception as e:
@@ -391,9 +399,9 @@ class PredictionInterface:
                 print(f"   Expected input shape: (1, {self.window_size}, 17)")
                 print("Falling back to placeholder prediction")
                 
-        # FALLBACK: deterministic estimate, used only if the Keras model failed to load
-        # (e.g. a TensorFlow version mismatch). Worse mean health → less remaining life.
-        # No randomness, so the demo stays reproducible.
+        # FALLBACK: deterministic estimate, used only if the model failed to load or is
+        # absent. Worse mean health → less remaining life. No randomness, so the demo
+        # stays reproducible.
         if len(self.sensor_history) > 0:
             health_score = float(np.mean(self.sensor_history[-1]))
         else:

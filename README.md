@@ -35,7 +35,7 @@ Given a sensor sample, the pipeline runs three stages and prints a maintenance a
    good fit for machines where real faults are rare and diverse.
 
 2. **Prediction — "how much life is left?"**
-   A **Li et al. (2018) 1D-CNN** (TensorFlow/Keras) estimates RUL in cycles from a
+   A **Li et al. (2018) 1D-CNN** (PyTorch) estimates RUL in cycles from a
    30-step sensor window, then maps it to an urgency level and a maintenance window.
 
 3. **Fusion — "so what do we do?"**
@@ -73,15 +73,17 @@ Predictive-Maintenance/
 │   ├── edge.py            # EdgeNode — on-robot real-time detection
 │   ├── cloud.py           # CloudNode — backend RUL prognostics + decision matrix
 │   ├── detection.py       # MVT-Flow inference interface (+ synthetic fallback)
-│   ├── mvt_flow_model.py  # MVT-Flow normalizing-flow model (PyTorch)
-│   ├── prediction.py      # RUL inference interface (ADR→C-MAPSS proxy + Keras CNN)
+│   ├── mvt_flow_model.py  # MVT-Flow normalizing-flow network (PyTorch)
+│   ├── prediction.py      # RUL inference interface (ADR→C-MAPSS proxy + CNN)
+│   ├── rul_model.py       # Li et al. RUL CNN network (PyTorch)
 │   └── fusion.py          # decision matrix
 ├── scripts/
 │   ├── train_rul.py           # RUL: raw C-MAPSS FD001 → preprocess → train → save
 │   ├── train_mvtflow.py       # detection: voraus parquet → windows → train → save
 │   └── calibrate_detection.py # reproduce detection thresholds from normal data
-├── models/                # all inference artifacts: MVT-Flow *.pt/*.pkl, RUL *.keras,
-│                          #   voraus_thresholds.json, normalization_stats.json
+├── models/                # all inference artifacts (PyTorch): mvt_flow_voraus_ad.pt,
+│                          #   scaler_voraus_ad.pkl, rul_cnn.pt, voraus_thresholds.json,
+│                          #   normalization_stats.json
 ├── data/samples/          # demo inputs: ADR readings, real C-MAPSS + voraus windows
 ├── notebooks/             # exploratory + the MVT-Flow Colab trainer (notebooks/README.md)
 └── docs/                  # architecture notes
@@ -118,8 +120,8 @@ ADR degradation data, once it exists, is the natural next step.
 ## How to run it
 
 ```bash
-# 1. clone, then create an environment (Python 3.10–3.13; NOT 3.14 yet — no TensorFlow wheels)
-python3.13 -m venv .venv && source .venv/bin/activate
+# 1. clone, then create an environment (Python 3.10–3.13)
+python3 -m venv .venv && source .venv/bin/activate
 
 # 2. install dependencies
 pip install -r requirements.txt
@@ -142,7 +144,7 @@ windowing, training and evaluation included.
 # RUL — Li et al. (2018) CNN on NASA C-MAPSS FD001 (~5 min, CPU is fine).
 # Download the free C-MAPSS set; point at the folder with train_FD001.txt / RUL_FD001.txt.
 python scripts/train_rul.py --cmapss-dir /path/to/CMAPSSData
-#   → writes models/li_et_al_cnn_corrected_best.keras + models/normalization_stats.json
+#   → writes models/rul_cnn.pt + models/normalization_stats.json
 
 # Detection — MVT-Flow on the voraus-AD parquet (GPU recommended).
 # Locally:
@@ -164,7 +166,7 @@ After training, re-run `python run_demo.py` for fully real, end-to-end results.
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
   Detection : healthy   score=-429147.5   [MVT-Flow]
-  Prediction: RUL=56 cycles  urgency=urgent
+  Prediction: RUL=47 cycles  urgency=immediate
   -> Action : schedule_maintenance_soon   (healthy status, but short RUL → PLAN)
   -> Operator: 📅 PLAN: schedule maintenance within the window
 
@@ -186,14 +188,14 @@ so the decision is self-consistent.
 
 ### RUL
 
-Trained by `scripts/train_rul.py` on C-MAPSS FD001 — **test RMSE = 19.1** (an untuned
+Trained by `scripts/train_rul.py` on C-MAPSS FD001 — **test RMSE = 17.5** (an untuned
 single run; Li et al. report ≈ 12.6). The demo validates it on three real, pre-normalized
 C-MAPSS test windows fed straight to the model (no ADR proxy):
 
 ```
 window 0: predicted RUL =  10.0 cycles  |  true RUL =   7
-window 1: predicted RUL =  86.7 cycles  |  true RUL =  87
-window 2: predicted RUL = 115.2 cycles  |  true RUL = 145
+window 1: predicted RUL =  72.1 cycles  |  true RUL =  87
+window 2: predicted RUL = 120.1 cycles  |  true RUL = 145
 ```
 
 Predictions track true RUL across the degradation range — a genuine check on the model's
@@ -218,7 +220,7 @@ Framed as a roadmap, not an apology — these are the honest edges of a portfoli
 - **Proxy data, not real ADR streams.** Detection uses voraus-AD, prediction uses
   C-MAPSS, and the ADR→C-MAPSS sensor mapping is a hand-built proxy. Real ADR
   run-to-failure data does not yet exist publicly (see *Data*).
-- **Metrics are single-run, not tuned.** Detection AUROC 0.946 and RUL RMSE 19.1 come from
+- **Metrics are single-run, not tuned.** Detection AUROC 0.946 and RUL RMSE 17.5 come from
   one training run each with default hyperparameters; the papers report better figures with
   ensembling/tuning. They are honest illustrations, not a benchmark-chasing effort.
 - **No real-time performance testing.** Latency/throughput claims are not benchmarked;

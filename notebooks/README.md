@@ -30,8 +30,10 @@ You do **not** need any notebook to try the pipeline — use `run_demo.py`.
 | Notebook | Purpose | Dataset |
 |----------|---------|---------|
 | `detection_00_preprocess_voraus.ipynb` | Inspecting/standardizing voraus-AD signals | voraus-AD |
-| `prediction_01_li_cnn_modeling.ipynb` | Li et al. (2018) architecture walkthrough | C-MAPSS FD001 |
+| `prediction_01_li_cnn_modeling.ipynb` | Li et al. (2018) architecture walkthrough (original Keras exploration) | C-MAPSS FD001 |
 
 These predate the scripts and assume a Colab environment; they are kept as a record of the
-design process. The earlier `prediction_00_preprocess_cmapss.ipynb` was removed — it operated
-on an unrelated dataset with helper imports that no longer exist.
+design process. Note `prediction_01` is the **original Keras** exploration — the shipped RUL
+model is now PyTorch (`scripts/train_rul.py`, `src/rul_model.py`); the notebook is history, not
+the current pipeline. The earlier `prediction_00_preprocess_cmapss.ipynb` was removed — it
+operated on an unrelated dataset with helper imports that no longer exist.
