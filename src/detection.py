@@ -1,22 +1,18 @@
 """
-MVT-Flow Detection Interface: Real-time Anomaly Detection for voraus-AD
+MVT-Flow Detection Interface — real-time anomaly detection for voraus-AD.
 
-This is an updated detection interface that uses MVT-Flow (Multivariate Time-series Flow)
-for anomaly detection on robot sensor data.
+Wraps the MVT-Flow (Multivariate Time-series Flow) normalizing-flow model for anomaly
+detection on robot machine data. It consumes multivariate time-series windows
+(130 signals x 1100 timesteps) and turns the model's likelihood into a health status:
 
-KEY DIFFERENCES FROM ORIGINAL:
-------------------------------
-1. Uses MVT-Flow normalizing flow instead of CNN-RNN
-2. Requires multivariate time series windows (130 signals × 1100 timesteps)
-3. Real-time sliding window approach for continuous monitoring
-4. Direct sensor-to-model mapping (no virtual sensor abstraction needed)
+    sensor window ─▶ StandardScaler ─▶ MVT-Flow ─▶ anomaly score ─▶ healthy / warning / anomaly
+    (130 x 1100)                       (PyTorch)   (neg. log-lik.)
 
-ARCHITECTURE:
-------------
-ADR Sensors → Time Window Buffer → MVT-Flow Model → Anomaly Score → Robot Status
-  [T,V,P,C]      [130×1100 window]    [PyTorch]      [0-1 prob]    [Healthy/Anomaly]
+The anomaly score is a negative log-likelihood (unbounded), so the status thresholds are
+calibrated on normal data rather than fixed — see __init__ and calibrate_thresholds.
 
-Based on: Brockmann et al. (2023) - voraus-AD Dataset
+Based on: Brockmann et al. (2023), The voraus-AD Dataset for Anomaly Detection in Robot
+Applications (arXiv:2311.04765).
 """
 
 import numpy as np
@@ -204,9 +200,8 @@ class MVTFlowDetectionInterface:
         assert n_timesteps == self.window_size, \
             f"Expected {self.window_size} timesteps, got {n_timesteps}"
         
-        # MODEL INFERENCE — real MVT-Flow, or synthetic fallback on the same path.
-        # Either branch assigns anomaly_score (the original code left it undefined
-        # when the model was not loaded, which crashed the fallback).
+        # Score the window: the real MVT-Flow model when its weights are loaded,
+        # otherwise the synthetic fallback. Both branches assign anomaly_score.
         if self.model_loaded:
             anomaly_score = self._detect_anomaly_mvtflow(sensor_window)
         else:

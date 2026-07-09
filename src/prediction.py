@@ -1,17 +1,13 @@
 """
-PREDICTION INTERFACE: RUL Estimation System with Preprocessing Pipeline
+Prediction Interface — Remaining Useful Life (RUL) estimation.
 
-This module implements the prediction component of the predictive maintenance
-pipeline, focusing on Remaining Useful Life (RUL) estimation through:
+The prediction stage of the pipeline. It maps a 4-channel ADR sensor reading onto the
+17-feature C-MAPSS format (a proxy mapping — see README), runs the trained Li et al. (2018)
+CNN over a 30-timestep window, and converts the estimated RUL into a maintenance-planning
+recommendation (urgency + maintenance window).
 
-1. **PREPROCESSING**: Virtual sensor abstraction (ADR → C-MAPSS format)
-2. RUL model inference on preprocessed features  
-3. Maintenance planning recommendations
-
-REAL MODEL INTEGRATION:
-----------------------
-This interface loads and uses the actual trained Li et al. CNN model for RUL estimation.
-The model was trained on C-MAPSS data and provides real predictions, not mock results.
+Based on: Li, Ding, Sun (2018), "Remaining useful life estimation in prognostics using deep
+convolution neural networks", Reliability Engineering & System Safety 172, 1–11.
 """
 
 import numpy as np
@@ -24,12 +20,11 @@ import json
 
 class PredictionInterface:
     """
-    RUL PREDICTION SYSTEM using trained Li et al. CNN model
-    
-    This class loads the actual trained model and provides real RUL predictions:
-    1. **PREPROCESSING**: ADR sensor data → C-MAPSS compatible features
-    2. **REAL MODEL INFERENCE**: Li et al. CNN trained on C-MAPSS data
-    3. Maintenance planning recommendations
+    RUL prediction using the trained Li et al. (2018) CNN.
+
+    1. Preprocess: ADR sensor reading → 17 C-MAPSS features (proxy mapping).
+    2. Inference: CNN over the last 30 timesteps.
+    3. Post-process: RUL cycles → urgency + maintenance window.
     """
     
     def __init__(self, model_path: str = None, window_size: int = 30):
@@ -91,11 +86,11 @@ class PredictionInterface:
                 print(f"   Model output shape: {self.model.output_shape}")
             else:
                 print(f"⚠️  Model file not found: {self.model_path}")
-                print("🔄 Using fallback mock prediction")
+                print("🔄 Using fallback placeholder prediction")
                 self.model_loaded = False
         except Exception as e:
             print(f"⚠️  Failed to load RUL model: {e}")
-            print("🔄 Using fallback mock prediction")
+            print("🔄 Using fallback placeholder prediction")
             self.model_loaded = False
     
     def get_maintenance_planning(self, adr_sensors: Dict[str, float]) -> Dict:
@@ -344,10 +339,10 @@ class PredictionInterface:
     
     def _predict_rul(self) -> float:
         """
-        RUL MODEL INFERENCE using trained Li et al. CNN model.
-        
-        This method uses the actual trained CNN model to predict remaining useful life
-        from the time series of preprocessed features.
+        Run the Li et al. CNN over the buffered time series to estimate RUL.
+
+        Builds a (1, 30, 17) input from the last 30 preprocessed readings and returns the
+        model's RUL estimate. Falls back to a placeholder if the model is not loaded.
         
         MODEL INPUT REQUIREMENTS:
         ------------------------
@@ -394,7 +389,7 @@ class PredictionInterface:
                 print(f"⚠️  Model prediction failed: {e}")
                 print(f"   Sensor history length: {len(self.sensor_history)}")
                 print(f"   Expected input shape: (1, {self.window_size}, 17)")
-                print("🔄 Falling back to mock prediction")
+                print("🔄 Falling back to placeholder prediction")
                 
         # FALLBACK: deterministic estimate, used only if the Keras model failed to load
         # (e.g. a TensorFlow version mismatch). Worse mean health → less remaining life.

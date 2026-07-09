@@ -15,10 +15,10 @@ Data (free): the voraus-AD 100 Hz parquet (https://www.tnt.uni-hannover.de/vorau
 Outputs (overwrite): models/mvt_flow_voraus_ad.pt, models/scaler_voraus_ad.pkl,
 models/voraus_thresholds.json.
 
-WHY THIS EXISTS: the original Colab notebook collapsed the time axis (n_timesteps=1) and
-flattened windows in timestep-major order while the model reshaped signal-major, scrambling
-the axes. This script builds correct signal-major (130, 1100) windows — the exact layout
-the inference interface (src/detection.py) feeds — so training and inference agree.
+Windows are built signal-major, shaped (130, 1100) — the same layout the inference
+interface (src/detection.py) feeds — so the model sees an identical layout at training and
+inference time. Each recording is padded/truncated to 1100 timesteps to preserve the full
+time axis the normalizing flow's temporal convolutions depend on.
 """
 
 import argparse

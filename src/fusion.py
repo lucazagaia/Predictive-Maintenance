@@ -101,20 +101,18 @@ class MaintenanceFusion:
             priority = "critical"
             reasoning = f"Anomaly detected: {detection_result['details']}"
         
-        # RULE 2: WARNING + LOW RUL → Urgent maintenance needed
-        # Degradation signs + short remaining life = high priority action.
-        # Matrix: Warning × {Immediate, Urgent} → URGENT. Previously only "immediate"
-        # was caught, so a warning + "urgent" RUL silently fell through to "monitor".
+        # RULE 2: WARNING + short-horizon RUL → urgent maintenance.
+        # Matrix: Warning × {Immediate, Urgent} → URGENT (degradation signs plus a short
+        # remaining life). Both short-horizon RUL levels escalate, not just "immediate".
         elif robot_status == "warning" and urgency in ("immediate", "urgent"):
             action = "schedule_urgent_maintenance"
             priority = "high"
             reasoning = f"Warning status with {urgency} RUL need ({rul_cycles} cycles)"
         
-        # RULE 3: LOW RUL + HEALTHY → Schedule maintenance soon (PLAN)
-        # Robot seems fine but running out of life - plan maintenance.
-        # Matrix: Healthy × {Immediate, Urgent} → PLAN (both short-horizon RUL levels
-        # escalate, mirroring the Warning row; "urgent" must be included, not just
-        # "immediate", or a healthy + urgent case wrongly falls through to CONTINUE.
+        # RULE 3: HEALTHY + short-horizon RUL → schedule maintenance soon (PLAN).
+        # Matrix: Healthy × {Immediate, Urgent} → PLAN. The robot is fine now but running
+        # out of life, so plan ahead; both short-horizon RUL levels escalate, mirroring
+        # the Warning row. (Status is already known non-anomaly, non-warning here.)
         elif urgency in ("immediate", "urgent"):
             action = "schedule_maintenance_soon"
             priority = "medium"
