@@ -37,6 +37,25 @@ META = ["time", "sample", "anomaly", "category", "setting", "action", "active"]
 N_SIGNALS, WINDOW = 130, 1100
 
 
+def tukey_thresholds(normal_scores):
+    """
+    Warning/anomaly thresholds as Tukey fences over the normal-score distribution.
+
+    Percentiles of the normal scores cannot express both bands: taking warning=p95 and
+    anomaly=p99 makes the warning band four percentiles of the normal tail by
+    construction, so it is a hair's width next to the normal-anomaly gap and effectively
+    never fires. Tukey fences instead measure distance beyond normal in units of the
+    normal spread itself — Q3 + 1.5*IQR is the classic "mild outlier" cut, Q3 + 3*IQR the
+    "extreme outlier" cut — which keeps calibration normal-only (no fault labels, as the
+    semi-supervised method intends) while giving the warning band real width.
+
+    Returns (warning, anomaly, q3, iqr).
+    """
+    q1, q3 = (float(v) for v in np.percentile(normal_scores, [25, 75]))
+    iqr = q3 - q1
+    return q3 + 1.5 * iqr, q3 + 3.0 * iqr, q3, iqr
+
+
 def build_windows(parquet_path):
     """Return (window_fn, normal_ids, anomaly_ids) reading signals once into memory."""
     import pandas as pd
@@ -88,14 +107,20 @@ def main():
     cal_ids = list(rng.choice(normal_ids, min(args.n_normal, len(normal_ids)), replace=False))
     cal = np.concatenate([window(s) for s in cal_ids])
     cs = det.predict_anomaly_score(cal)
-    warn, anom_t = float(np.percentile(cs, 95)), float(np.percentile(cs, 99))
+    warn, anom_t, q3, iqr = tukey_thresholds(cs)
 
+    # Anomaly windows are scored to EVALUATE the thresholds, never to set them: MVT-Flow
+    # is semi-supervised, and a fleet in the field has no labelled faults to calibrate on.
     test_ids = list(rng.choice(anomaly_ids, min(args.n_anomaly, len(anomaly_ids)), replace=False))
     ascore = det.predict_anomaly_score(np.concatenate([window(s) for s in test_ids]))
     print(f"normal  scores: mean={cs.mean():.3e} range[{cs.min():.3e}, {cs.max():.3e}]")
     print(f"anomaly scores: mean={ascore.mean():.3e} range[{ascore.min():.3e}, {ascore.max():.3e}]")
-    print(f"thresholds: warning(p95)={warn:.3e}  anomaly(p99)={anom_t:.3e}")
-    print(f"anomaly windows above anomaly threshold: {(ascore > anom_t).mean() * 100:.0f}%")
+    print(f"normal Q3={q3:.3e}  IQR={iqr:.3e}")
+    print(f"thresholds: warning(Q3+1.5*IQR)={warn:.3e}  anomaly(Q3+3*IQR)={anom_t:.3e}")
+    print("evaluation against the held-out anomaly set:")
+    print(f"  anomaly windows flagged anomaly:  {(ascore > anom_t).mean() * 100:.0f}%")
+    print(f"  anomaly windows flagged >=warning: {(ascore > warn).mean() * 100:.0f}%")
+    print(f"  normal windows false-flagged >=warning: {(cs > warn).mean() * 100:.1f}%")
 
     # export a representative normal + the most-detectable anomaly window for the demo
     norm_pick = cal_ids[int(np.argsort(cs)[len(cs) // 2])]
@@ -107,8 +132,10 @@ def main():
     (ROOT / "models" / "voraus_thresholds.json").write_text(json.dumps({
         "warning_threshold": warn,
         "anomaly_threshold": anom_t,
-        "calibrated_on": f"{len(cal_ids)} real voraus-AD normal windows (p95/p99)",
-        "note": "MVT-Flow trained with n_timesteps=1; scores computed on full 1100-step windows",
+        "calibrated_on": f"{len(cal_ids)} real voraus-AD normal windows (Tukey fences)",
+        "normal_q3": q3,
+        "normal_iqr": iqr,
+        "method": "warning = Q3 + 1.5*IQR, anomaly = Q3 + 3*IQR of the normal scores",
     }, indent=2))
     print("Wrote models/voraus_thresholds.json and data/samples/voraus_*_window.npy")
 

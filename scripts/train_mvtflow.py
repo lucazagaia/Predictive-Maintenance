@@ -31,6 +31,9 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from calibrate_detection import tukey_thresholds   # noqa: E402  (single source of truth)
 
 META = ["time", "sample", "anomaly", "category", "setting", "action", "active"]
 N_SIGNALS, WINDOW = 130, 1100
@@ -133,16 +136,22 @@ def main():
 
     sn, sa = scores(testn_s), scores(testa_s)
     auroc = roc_auc_score(np.r_[np.zeros(len(sn)), np.ones(len(sa))], np.r_[sn, sa])
-    warn, anom_t = float(np.percentile(sn, 95)), float(np.percentile(sn, 99))
+    # Thresholds come from the normal scores only (see calibrate_detection.tukey_thresholds):
+    # the anomaly scores here evaluate them, they never set them.
+    warn, anom_t, q3, iqr = tukey_thresholds(sn)
     print(f"\nAUROC = {auroc:.3f}   (paper baseline ≈ 0.936)")
-    print(f"thresholds: warning(p95)={warn:.2f}  anomaly(p99)={anom_t:.2f}")
+    print(f"thresholds: warning(Q3+1.5*IQR)={warn:.2f}  anomaly(Q3+3*IQR)={anom_t:.2f}")
+    print(f"  anomaly windows flagged anomaly: {(sa > anom_t).mean() * 100:.0f}%  "
+          f">=warning: {(sa > warn).mean() * 100:.0f}%")
 
     torch.save(model.state_dict(), ROOT / "models" / "mvt_flow_voraus_ad.pt")
     with open(ROOT / "models" / "scaler_voraus_ad.pkl", "wb") as f:
         pickle.dump(scaler, f)
     (ROOT / "models" / "voraus_thresholds.json").write_text(json.dumps({
         "warning_threshold": warn, "anomaly_threshold": anom_t,
-        "calibrated_on": f"{len(test_n)} held-out normal windows (p95/p99)",
+        "calibrated_on": f"{len(test_n)} held-out normal windows (Tukey fences)",
+        "normal_q3": q3, "normal_iqr": iqr,
+        "method": "warning = Q3 + 1.5*IQR, anomaly = Q3 + 3*IQR of the normal scores",
         "auroc": round(float(auroc), 4),
     }, indent=2))
     print("saved models/mvt_flow_voraus_ad.pt, scaler_voraus_ad.pkl, voraus_thresholds.json")

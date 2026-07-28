@@ -186,9 +186,17 @@ a short RUL yields `PLAN`, while a live anomaly overrides everything to `STOP`.
 **AUROC = 0.946** on a held-out normal/anomaly split (`scripts/train_mvtflow.py`, seed 42) —
 slightly above the paper's 0.936, which is a mean over 9 runs, so read this as a strong
 single-split result rather than a matched benchmark. MVT-Flow scores are unbounded
-log-likelihoods, so the healthy/anomaly thresholds are calibrated on real normal windows
-(p95/p99 → `models/voraus_thresholds.json`); calibration and inference share preprocessing,
-so the decision is self-consistent.
+log-likelihoods, so the healthy/warning/anomaly thresholds are calibrated on real normal
+windows only — Tukey fences over the normal-score distribution (warning = Q3 + 1.5·IQR,
+anomaly = Q3 + 3·IQR → `models/voraus_thresholds.json`). Calibration stays normal-only on
+purpose: the anomaly set evaluates the thresholds but never sets them, matching how a fleet
+without labelled faults would actually be commissioned. Calibration and inference share
+preprocessing, so the decision is self-consistent.
+
+> **Note:** the committed `voraus_thresholds.json` predates this scheme (it was written
+> with warning = p95 / anomaly = p99 of the normal scores, which makes the warning band
+> four percentiles of the normal tail — so narrow that `warning` effectively never fires).
+> Re-run `scripts/calibrate_detection.py` against the voraus-AD parquet to regenerate it.
 
 ### RUL
 
