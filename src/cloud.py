@@ -43,11 +43,11 @@ class CloudNode:
 
     def on_state(self, state: StateMsg) -> PredictionMsg:
         """Handle /robot/state → publish /cloud/prediction (RUL)."""
-        # Warm the predictor's window with this reading so the demo is deterministic.
+        # One call suffices: with a single reading in history, the predictor left-pads
+        # the 30-step window by replicating it — identical input (and output) to
+        # calling it 30 times, without 29 wasted forward passes.
         self.predictor.sensor_history = []
-        plan = None
-        for _ in range(self.predictor.window_size):
-            plan = self.predictor.get_maintenance_planning(state.adr)
+        plan = self.predictor.get_maintenance_planning(state.adr)
         return PredictionMsg(
             header=Header(robot_id=state.header.robot_id),
             rul_cycles=plan["rul_cycles"], urgency=plan["urgency"],

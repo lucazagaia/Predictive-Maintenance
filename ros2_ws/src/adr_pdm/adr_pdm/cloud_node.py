@@ -11,7 +11,10 @@ Detection arrives, runs RUL on that state and fuses the two into a decision. Wra
 repo's PredictionInterface + MaintenanceFusion unchanged.
 """
 
+import sys
+
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from adr_pdm_interfaces.msg import RobotState, Detection, Prediction, Decision
@@ -52,10 +55,11 @@ class CloudNode(Node):
 
         adr = {"temperature": state.temperature, "vibration": state.vibration,
                "torque": state.torque, "current": state.current}
+        # One call suffices: with a single reading in history, the predictor left-pads
+        # the 30-step window by replicating it — identical input (and output) to
+        # calling it 30 times, without 29 wasted forward passes in this callback.
         self.predictor.sensor_history = []
-        plan = None
-        for _ in range(self.predictor.window_size):
-            plan = self.predictor.get_maintenance_planning(adr)
+        plan = self.predictor.get_maintenance_planning(adr)
 
         pred = Prediction()
         pred.header = det.header
@@ -82,15 +86,19 @@ class CloudNode(Node):
 
 
 def main(args=None):
+    # Shutdown handling per the official demo nodes (ros2 launch sends an
+    # external shutdown, not only SIGINT-as-KeyboardInterrupt).
     rclpy.init(args=args)
     node = CloudNode()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
+    except ExternalShutdownException:
+        sys.exit(1)
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

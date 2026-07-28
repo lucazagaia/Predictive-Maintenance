@@ -61,3 +61,33 @@ ros2 launch adr_pdm pdm.launch.py
   robot id, so a fleet is just the same three nodes launched under one namespace per robot
   (the dashboard step builds on this).
 - Models are the committed PyTorch weights; no training needed to run the graph.
+
+## Design notes & known deviations
+
+Choices that follow the ROS2 documentation:
+
+- **QoS.** The large sensor window (~572 KB/msg) is published and subscribed with the
+  documented `qos_profile_sensor_data` (best-effort, small queue); the low-rate
+  result/command topics (`edge/detection`, `cloud/prediction`, `decision`) stay on the
+  default reliable profile.
+- **Shutdown.** Node `main()`s follow the official demo pattern: catch
+  `KeyboardInterrupt` *and* `ExternalShutdownException` (what `ros2 launch` triggers) and
+  call `rclpy.try_shutdown()`.
+- **Interfaces.** Custom messages live in an `ament_cmake` package (interfaces cannot be
+  generated from `ament_python`), with the documented `rosidl` declarations.
+
+Deliberate deviations, and what the canonical alternative would be:
+
+- **`header.frame_id` carries the robot id.** `frame_id` is formally a TF frame name;
+  using it as a fleet identifier is common practice but a repurpose. A dedicated
+  `string robot_id` field would be the strict alternative.
+- **The cloud node caches the latest `RobotState` per robot** and fuses when a
+  `Detection` arrives. The canonical multi-topic composition is `message_filters`
+  (e.g. `ApproximateTimeSynchronizer` or `Cache`); a latest-value cache was chosen
+  because the two topics have different rates and only the freshest state matters.
+- **Nodes import the repo's `src/` via `ADR_PDM_ROOT`/`sys.path`** instead of installing
+  the pipeline as a proper Python package. Packaging-clean alternative: `pip install`
+  the repo in the image and import it normally.
+- **Plain nodes, not lifecycle nodes; no rosdep.** Managed lifecycle nodes and
+  rosdep-resolved dependencies are the production-grade route; a demo pipeline with a
+  hand-pinned Dockerfile keeps the surface smaller.
