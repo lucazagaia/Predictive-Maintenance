@@ -66,10 +66,19 @@ ros2 launch adr_pdm pdm.launch.py
 
 Choices that follow the ROS2 documentation:
 
-- **QoS.** The large sensor window (~572 KB/msg) is published and subscribed with the
-  documented `qos_profile_sensor_data` (best-effort, small queue); the low-rate
-  result/command topics (`edge/detection`, `cloud/prediction`, `decision`) stay on the
-  default reliable profile.
+- **QoS.** The sensor window is **reliable, keep-last depth 1** — deliberately *not* the
+  `qos_profile_sensor_data` profile. That profile targets high-rate streams (lidar,
+  camera) where a dropped sample is replaced milliseconds later; here a single ~572 KB
+  message carries an 11-second operation and drives a full safety decision, and at that
+  size a best-effort sample is fragmented over UDP, so one lost fragment discards the
+  whole window. Measured: best-effort dropped roughly half the windows, reliable drops
+  none. Depth 1 still avoids queueing stale windows if a consumer lags. The low-rate
+  result/command topics use the default reliable profile.
+- **Startup.** Volatile durability retains nothing for late-joining subscribers, so the
+  driver waits until the edge and cloud subscriptions are discovered
+  (`get_subscription_count()`) before its first publish. Without this the opening ticks
+  are published into the void and the graph looks idle for ~12 s; with it the first
+  detection lands under a second.
 - **Shutdown.** Node `main()`s follow the official demo pattern: catch
   `KeyboardInterrupt` *and* `ExternalShutdownException` (what `ros2 launch` triggers) and
   call `rclpy.try_shutdown()`.

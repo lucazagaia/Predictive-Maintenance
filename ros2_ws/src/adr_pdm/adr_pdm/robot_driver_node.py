@@ -19,11 +19,23 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import Header
 
 from adr_pdm_interfaces.msg import RobotState, SensorWindow
 from adr_pdm.pipeline import SAMPLES
+
+# QoS for the sensor window. Not the sensor-data profile: that profile is meant for
+# high-rate streams where a dropped sample is replaced milliseconds later. One window
+# here is ~572 KB carrying an 11-second operation, and it drives a full safety decision,
+# so losing one costs a whole monitoring cycle — and at that size a best-effort sample is
+# fragmented over UDP, where a single lost fragment discards it. Reliable delivery
+# retransmits fragments; depth 1 keeps only the newest window if the consumer lags.
+WINDOW_QOS = QoSProfile(
+    reliability=ReliabilityPolicy.RELIABLE,
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+)
 
 
 class RobotDriver(Node):
@@ -43,13 +55,28 @@ class RobotDriver(Node):
         else:
             self.window = np.random.default_rng(0).standard_normal((130, 1100)).astype("float32")
 
+        self.period = float(period)
         self.state_pub = self.create_publisher(RobotState, "robot/state", 10)
-        # Large sensor stream (~572 KB/msg): best-effort + small queue, per the
-        # documented sensor-data QoS profile.
-        self.window_pub = self.create_publisher(SensorWindow, "robot/window",
-                                                qos_profile_sensor_data)
-        self.create_timer(float(period), self.tick)
+        self.window_pub = self.create_publisher(SensorWindow, "robot/window", WINDOW_QOS)
+
+        # Volatile durability means nothing is retained for late-joining subscribers, so
+        # anything published before DDS discovery completes is lost. Poll until the edge
+        # and cloud subscriptions are visible, then start streaming — otherwise the first
+        # few ticks vanish and the graph looks idle for ~10 s.
+        self.timer = self.create_timer(0.2, self._await_subscribers)
         self.get_logger().info(f"robot_driver up: {self.robot_id} (scenario={scenario})")
+
+    def _await_subscribers(self):
+        """Hold off publishing until the downstream nodes have been discovered."""
+        if self.window_pub.get_subscription_count() == 0 or \
+                self.state_pub.get_subscription_count() == 0:
+            self.get_logger().info("waiting for edge/cloud subscribers...", once=True)
+            return
+
+        self.timer.cancel()
+        self.get_logger().info("subscribers discovered, streaming")
+        self.tick()                                          # publish at once
+        self.timer = self.create_timer(self.period, self.tick)
 
     def _header(self) -> Header:
         h = Header()

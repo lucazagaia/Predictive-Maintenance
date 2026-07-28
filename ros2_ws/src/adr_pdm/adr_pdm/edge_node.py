@@ -13,7 +13,7 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
 from adr_pdm_interfaces.msg import SensorWindow, Detection
 from adr_pdm.pipeline import MODELS   # side effect: repo src/ on sys.path
@@ -29,10 +29,13 @@ class EdgeNode(Node):
             window_size=1100, n_signals=130,
         )
         self.pub = self.create_publisher(Detection, "edge/detection", 10)
-        # Sensor stream: subscription QoS must match the publisher's best-effort
-        # sensor-data profile (a reliable subscription would not connect to it).
-        self.create_subscription(SensorWindow, "robot/window", self.on_window,
-                                 qos_profile_sensor_data)
+        # Must mirror the driver's window QoS (reliable, keep-last depth 1) — an
+        # incompatible subscription profile simply never matches the publisher.
+        self.create_subscription(
+            SensorWindow, "robot/window", self.on_window,
+            QoSProfile(reliability=ReliabilityPolicy.RELIABLE,
+                       history=HistoryPolicy.KEEP_LAST, depth=1),
+        )
         self.get_logger().info("edge_node up")
 
     def on_window(self, msg: SensorWindow):
