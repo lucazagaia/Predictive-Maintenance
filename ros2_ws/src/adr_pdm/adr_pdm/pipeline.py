@@ -14,12 +14,32 @@ import sys
 from pathlib import Path
 
 
+def _looks_like_repo(path: Path) -> bool:
+    return (path / "src" / "detection.py").is_file() and (path / "models").is_dir()
+
+
 def repo_root() -> Path:
+    """
+    Locate the repo holding src/ and models/.
+
+    ADR_PDM_ROOT wins when set (the Docker image sets it). Otherwise walk up from this
+    file looking for the repo layout: colcon installs this package to
+    ros2_ws/install/adr_pdm/lib/pythonX/site-packages/adr_pdm/, so a fixed number of
+    parents only works when running from source — walking works for both.
+    """
     env = os.environ.get("ADR_PDM_ROOT")
     if env:
         return Path(env)
-    # this file: ros2_ws/src/adr_pdm/adr_pdm/pipeline.py  ->  repo root is parents[4]
-    return Path(__file__).resolve().parents[4]
+
+    here = Path(__file__).resolve()
+    for candidate in here.parents:
+        if _looks_like_repo(candidate):
+            return candidate
+
+    raise RuntimeError(
+        "Could not locate the repository (no src/detection.py + models/ above "
+        f"{here}). Set ADR_PDM_ROOT to the repo root."
+    )
 
 
 ROOT = repo_root()

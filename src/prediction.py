@@ -23,6 +23,28 @@ import json
 sys.path.append(str(Path(__file__).parent))
 from rul_model import LiCNN
 
+# The model is trained against a piecewise-linear RUL target capped at R_EARLY
+# (Li et al.'s FD001 convention, mirrored in scripts/train_rul.py), so its output is
+# effectively bounded by it: degradation is only observable once a unit is within
+# R_EARLY cycles of failure.
+R_EARLY = 125
+
+# Predictions are clamped to a plausible band rather than an arbitrary one. The floor is
+# 0 — flooring above it would hide exactly the imminent-failure predictions this system
+# exists to surface — and the ceiling is R_EARLY, past which the model cannot discriminate.
+RUL_MIN, RUL_MAX = 0.0, float(R_EARLY)
+
+# Urgency bands as fractions of R_EARLY. They must track the trained range: bands built
+# for a 0-500 output (50/150/300) leave "soon" and "planned" unreachable on an
+# R_EARLY=125 model, which silently kills two columns of the decision matrix.
+# (cutoff, urgency, maintenance window) — first matching cutoff wins.
+URGENCY_BANDS = [
+    (0.20 * R_EARLY, "immediate", "< 1 week"),     # < 25 cycles
+    (0.40 * R_EARLY, "urgent", "1-2 weeks"),       # < 50 cycles
+    (0.72 * R_EARLY, "soon", "2-4 weeks"),         # < 90 cycles
+    (float("inf"), "planned", "> 1 month"),
+]
+
 
 class PredictionInterface:
     """
@@ -134,10 +156,8 @@ class PredictionInterface:
         
         MAINTENANCE PLANNING LOGIC:
         --------------------------
-        - rul < 50:    immediate → "< 1 week"     (Critical - schedule now)
-        - rul < 150:   urgent → "1-2 weeks"      (High priority scheduling)  
-        - rul < 300:   soon → "2-4 weeks"        (Plan ahead)
-        - rul ≥ 300:   planned → "> 1 month"     (Routine maintenance)
+        Bands are fractions of R_EARLY (125), the piecewise-linear cap the model is
+        trained against — see URGENCY_BANDS.
         """
         # STEP 1: PREPROCESSING - Virtual sensor abstraction and normalization
         cmapss_features = self._preprocess_adr_to_cmapss(adr_sensors)
@@ -173,7 +193,7 @@ class PredictionInterface:
             w = w[np.newaxis, ...]
         with torch.no_grad():
             rul = float(self.model(torch.from_numpy(w)).item())
-        return float(np.clip(rul, 10, 500))
+        return float(np.clip(rul, RUL_MIN, RUL_MAX))
 
     def _convert_to_maintenance_plan(self, rul_cycles: float) -> Dict:
         """
@@ -188,21 +208,15 @@ class PredictionInterface:
         # Handle NaN or invalid RUL values
         if np.isnan(rul_cycles) or rul_cycles < 0:
             print(f"Invalid RUL value: {rul_cycles}, using default")
-            rul_cycles = 300.0
-        
-        if rul_cycles < 50:
-            urgency = "immediate" 
-            window = "< 1 week"
-        elif rul_cycles < 150:
-            urgency = "urgent"
-            window = "1-2 weeks" 
-        elif rul_cycles < 300:
-            urgency = "soon"
-            window = "2-4 weeks"
-        else:
-            urgency = "planned"
-            window = "> 1 month"
-        
+            rul_cycles = float(R_EARLY)
+
+        urgency, window = URGENCY_BANDS[-1][1:]
+        for cutoff, band_urgency, band_window in URGENCY_BANDS:
+            if rul_cycles < cutoff:
+                urgency, window = band_urgency, band_window
+                break
+
+
         return {
             "rul_cycles": int(rul_cycles),
             # Illustrative fixed confidence: the Li et al. CNN is a point-estimate
@@ -367,7 +381,7 @@ class PredictionInterface:
                 if current_history_len == 0:
                     # No data yet - return default value
                     print("No sensor history available yet")
-                    return 300.0
+                    return float(R_EARLY)
                 
                 if current_history_len < self.window_size:
                     # Pad with first reading if we don't have enough history yet
@@ -386,8 +400,8 @@ class PredictionInterface:
                 with torch.no_grad():
                     rul_prediction = float(self.model(torch.from_numpy(model_input)).item())
 
-                # Ensure realistic RUL range (10-500 cycles)
-                rul_prediction = float(np.clip(rul_prediction, 10, 500))
+                # Clamp to the range the model was trained to express
+                rul_prediction = float(np.clip(rul_prediction, RUL_MIN, RUL_MAX))
 
                 return rul_prediction
                 
@@ -405,10 +419,11 @@ class PredictionInterface:
         else:
             health_score = 0.5
 
-        base_rul = 400
-        health_penalty = health_score * 200
-        rul = max(10.0, base_rul - health_penalty)
-        return rul
+        # Expressed on the same R_EARLY scale as the real model: a healthy window
+        # (mean ~ -1 after [-1, 1] normalization) sits near the cap, a degraded one
+        # well below it.
+        rul = R_EARLY * (0.6 - 0.4 * health_score)
+        return float(np.clip(rul, RUL_MIN, RUL_MAX))
 
 
 # Quick test  

@@ -170,7 +170,7 @@ After training, re-run `python run_demo.py` for fully real, end-to-end results.
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
   Detection : healthy   score=-429147.5   [MVT-Flow]
-  Prediction: RUL=47 cycles  urgency=immediate
+  Prediction: RUL=47 cycles  urgency=urgent
   -> Action : schedule_maintenance_soon   (healthy status, but short RUL → PLAN)
   -> Operator: 📅 PLAN: schedule maintenance within the window
 
@@ -197,7 +197,7 @@ single run; Li et al. report ≈ 12.6). The demo validates it on three real, pre
 C-MAPSS test windows fed straight to the model (no ADR proxy):
 
 ```
-window 0: predicted RUL =  10.0 cycles  |  true RUL =   7
+window 0: predicted RUL =   9.9 cycles  |  true RUL =   7
 window 1: predicted RUL =  72.1 cycles  |  true RUL =  87
 window 2: predicted RUL = 120.1 cycles  |  true RUL = 145
 ```
