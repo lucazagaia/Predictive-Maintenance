@@ -1,208 +1,253 @@
 # Predictive Maintenance for Autonomous Delivery Robots — ML & Decision Layer
 
-A compact, legible implementation of the machine-learning and decision-logic layer of
-a predictive-maintenance pipeline: sensor data in → **anomaly detection** + **remaining
-useful life (RUL) estimation** → **fusion** → a maintenance recommendation
-(`CONTINUE` / `MONITOR` / `PLAN` / `URGENT` / `STOP`).
+Sensor data in → **anomaly detection** + **remaining-useful-life (RUL) estimation** →
+**decision logic** → a maintenance recommendation (`CONTINUE` / `MONITOR` / `PLAN` /
+`URGENT` / `STOP`).
 
-> ⚠️ **Portfolio / research prototype.** This is a personal project that validates an
-> ML approach. It is intentionally *not* production software and will never run on a
-> real robot — it demonstrates the method, not a deployment.
-
----
-
-## Context
-
-This repository implements the **model and decision-logic layer** from a bachelor's
-thesis on predictive maintenance for autonomous last-mile delivery robots (TU Berlin,
-graded **1.3**). The thesis is a conceptual *Vorgehensmodell*: it designed the process,
-the edge/cloud reference architecture, and the choice of ML/decision methods, but — as its
-own limitations note — built **no prototype** and validated the approach conceptually, not
-experimentally. This repo is that missing implementation: an **independent, personal
-project** that runs the thesis's chosen methods (MVT-Flow, Li et al. CNN) on the benchmark
-datasets it identifies. It is not thesis deliverable code.
+> **V1 — raw Python pipeline.** Tagged [`v1.0.0`](../../releases/tag/v1.0.0): two trained
+> models, a decision layer, and one command that runs the whole thing, with no ROS2 or
+> container needed.
+>
+> `main` also carries the in-progress **V2 deployment layer** (`ros2_ws/`, `Dockerfile`) —
+> real ROS2 Humble nodes running these same models. It is functional but still being
+> hardened, so check out the `v1.0.0` tag for the stable V1 surface. See
+> [Roadmap](#roadmap).
 
 ---
 
-## What this does
+## Why this exists
 
-Given a sensor sample, the pipeline runs three stages and prints a maintenance action:
+My bachelor's thesis (TU Berlin, graded **1.3**) designed a *Vorgehensmodell* — a process
+model for conceiving a predictive-maintenance system for autonomous last-mile delivery
+robots. It is a conceptual work: it specifies which components matter, which data to
+collect, which model classes fit, and how a maintenance decision should be reached. As its
+own limitations section states, **no prototype was built** — the approach was validated
+conceptually, not experimentally.
+
+This repository is that missing implementation. It takes the methods the thesis selected,
+builds them, trains them on the benchmark datasets the thesis identifies, and runs them end
+to end. The intention is not a product and not thesis deliverable code: it is an independent
+personal project that answers *"does the thing I specified actually work when you build it?"*
+
+That framing also sets the standard the repo holds itself to — every number here comes from
+a run you can reproduce, and every gap between the concept and the implementation is stated
+rather than glossed over.
+
+---
+
+## Alignment with the thesis
+
+The thesis structures the design into four *Gestaltungsfelder* (design fields, Chapter 4).
+This repository implements the second half of that model — the data-to-decision path:
+
+| Thesis | Scope | In this repo |
+|---|---|---|
+| **4.1** Systemanalyse und Wartungsbedarfe | Critical ADR components, failure modes | Conceptual — sets which sensors matter (see *Data*) |
+| **4.2** Datenakquise und Preprocessing | Sensor acquisition, preprocessing, data communication | `scripts/train_*.py` (preprocessing), `src/messages.py` (message contracts) |
+| **4.3** Modellauswahl und -inferenz | Model classes, training, online inference | `src/mvt_flow_model.py`, `src/rul_model.py`, `src/detection.py`, `src/prediction.py` |
+| **4.4** Wartungshilfe | Decision inputs, decision logic, operator output | `src/fusion.py` |
+
+Two specifics worth naming, because they are the parts a reader can check directly:
+
+- **The decision matrix** in `src/fusion.py` implements the thesis's *Entscheidungsmatrix*
+  (§4.4.3, Tabelle 1) cell for cell — including its safety-first rule that a live anomaly
+  forces `STOP` regardless of the RUL estimate.
+- **The sensor set** (temperature, vibration, torque, current) is the thesis's proprioceptive
+  ADR sensor set (§4.2.1), not a generic industrial one.
+
+The thesis also sketches an edge/cloud reference architecture (Abbildung 2) and a ROS2-based
+publish/subscribe design (§4.2.3). V1 models those boundaries in software — `src/edge.py`
+and `src/cloud.py` exchange typed messages over named topics — without a ROS2 dependency,
+so the pipeline runs anywhere Python does. The V2 layer on `main` takes the same models into
+actual ROS2 nodes with DDS transport (see [`docs/ROS2.md`](docs/ROS2.md)).
+
+---
+
+## What it does
+
+Given a sensor sample, three stages run and a maintenance action is printed:
 
 1. **Detection — "is the robot healthy right now?"**
-   An **MVT-Flow** normalizing-flow model (PyTorch) scores a multivariate time-series
-   window and returns `healthy` / `warning` / `anomaly`. Normalizing flows learn the
-   density of *normal* operation, so they need only normal data at training time — a
-   good fit for machines where real faults are rare and diverse.
+   An **MVT-Flow** normalizing flow scores a multivariate time-series window and returns
+   `healthy` / `warning` / `anomaly`. A normalizing flow learns the density of *normal*
+   operation, so it needs only normal data at training time — the right fit for machines
+   where real faults are rare, diverse, and expensive to label.
 
 2. **Prediction — "how much life is left?"**
-   A **Li et al. (2018) 1D-CNN** (PyTorch) estimates RUL in cycles from a
-   30-step sensor window, then maps it to an urgency level and a maintenance window.
+   A **Li et al. (2018) 1-D CNN** estimates RUL in cycles from a 30-step window, which is
+   then mapped to an urgency level and a maintenance window.
 
-3. **Fusion — "so what do we do?"**
-   A small, auditable **decision matrix** combines the two, always letting a live
-   anomaly override an optimistic RUL (safety before planning), and emits an action
-   plus a plain-language operator message.
+3. **Decision — "so what do we do?"**
+   A small, auditable **decision matrix** combines the two. Detection answers a safety
+   question, prediction answers a planning question, and the matrix keeps safety ahead of
+   planning.
 
-`run_demo.py` runs all three end to end on sample inputs and prints the result.
+```
+                          RUL urgency
+                immediate  urgent    soon      planned
+   Anomaly      STOP       STOP      STOP      STOP
+   Warning      URGENT     URGENT    MONITOR   MONITOR
+   Healthy      PLAN       PLAN      CONTINUE  CONTINUE
+```
+
+```
+voraus-AD window ──▶ MVT-Flow detection ─┐
+ (130 × 1100)                            ├─▶ decision matrix ──▶ CONTINUE / MONITOR /
+ADR sensor reading ─▶ Li et al. RUL ─────┘                       PLAN / URGENT / STOP
+ (4 channels)
+```
+
+Two input modalities on purpose: detection consumes a raw multivariate window, prediction
+consumes a 4-channel ADR reading. See [`docs/architecture.md`](docs/architecture.md) for the
+component rationale.
 
 ---
 
-## Architecture
-
-```
-                    ┌─ EDGE (on-robot) ──┐   ┌─ CLOUD (backend) ────────┐
-/robot/state ──────▶│ MVT-Flow detection │──▶│ decision matrix (fusion) │──▶ /decision
-        │           └─ /edge/detection ──┘   │                          │    CONTINUE / MONITOR /
-        └──────────────────────────────────▶ │ Li et al. RUL            │    PLAN / URGENT / STOP
-                                              └─ /cloud/prediction ──────┘
-```
-
-This mirrors the thesis reference architecture (Abbildung 2): the latency-critical anomaly
-detector runs at the **edge** (on-robot), the heavier RUL model + decision matrix run in the
-**cloud**, and the stages exchange **typed messages over named topics** (`src/messages.py`,
-the software analogue of the thesis's ROS2 `state.msg`). `run_demo.py` runs this in one
-process (no ROS2 needed), and the **same** detection/RUL/fusion code also ships as a real
-**ROS2 (Humble)** package — genuine `rclpy` nodes over DDS topics, runnable via Docker; see
-[`docs/ROS2.md`](docs/ROS2.md). Two input modalities on purpose: detection consumes a raw
-multivariate window; prediction consumes a 4-channel ADR reading. See
-[`docs/architecture.md`](docs/architecture.md) for the component rationale and decision matrix.
+## Repository structure
 
 ```
 Predictive-Maintenance/
-├── run_demo.py            # ← single entry point ("run this to see it work")
+├── run_demo.py            # ← the entry point: one command, full pipeline
 ├── src/
-│   ├── messages.py        # typed message contracts (ROS2 state.msg-style topics)
-│   ├── edge.py            # EdgeNode — on-robot real-time detection
-│   ├── cloud.py           # CloudNode — backend RUL prognostics + decision matrix
-│   ├── detection.py       # MVT-Flow inference interface (+ synthetic fallback)
-│   ├── mvt_flow_model.py  # MVT-Flow normalizing-flow network (PyTorch)
-│   ├── prediction.py      # RUL inference interface (ADR→C-MAPSS proxy + CNN)
-│   ├── rul_model.py       # Li et al. RUL CNN network (PyTorch)
-│   └── fusion.py          # decision matrix
+│   ├── detection.py       # MVT-Flow inference: window → healthy/warning/anomaly
+│   ├── mvt_flow_model.py  # MVT-Flow network (PyTorch)
+│   ├── prediction.py      # RUL inference: ADR reading → RUL → urgency
+│   ├── rul_model.py       # Li et al. CNN (PyTorch)
+│   ├── fusion.py          # the decision matrix
+│   ├── messages.py        # typed message contracts between stages
+│   ├── edge.py            # edge node: detection
+│   └── cloud.py           # cloud node: RUL + decision
 ├── scripts/
-│   ├── train_rul.py           # RUL: raw C-MAPSS FD001 → preprocess → train → save
-│   ├── train_mvtflow.py       # detection: voraus parquet → windows → train → save
-│   └── calibrate_detection.py # reproduce detection thresholds from normal data
-├── models/                # all inference artifacts (PyTorch): mvt_flow_voraus_ad.pt,
-│                          #   scaler_voraus_ad.pkl, rul_cnn.pt, voraus_thresholds.json,
-│                          #   normalization_stats.json
+│   ├── train_rul.py            # raw C-MAPSS FD001 → trained RUL model
+│   ├── train_mvtflow.py        # voraus-AD parquet → trained detector
+│   └── calibrate_detection.py  # detection thresholds from normal data
+├── models/                # trained weights + scalers + thresholds (committed)
 ├── data/samples/          # demo inputs: ADR readings, real C-MAPSS + voraus windows
-├── ros2_ws/               # real ROS2 (Humble) package: rclpy nodes + custom .msg (docs/ROS2.md)
-├── Dockerfile             # ROS2 + PyTorch image to build/run the node graph
-├── notebooks/             # exploratory + the MVT-Flow Colab trainer (notebooks/README.md)
-└── docs/                  # architecture + ROS2 notes
+├── notebooks/             # the same training runs, stage by stage (see notebooks/README.md)
+├── docs/
+│   ├── architecture.md    # component rationale and decision matrix
+│   └── ROS2.md            # V2: running the pipeline as real ROS2 nodes
+├── ros2_ws/               # V2: ROS2 Humble packages (interfaces + rclpy nodes)
+└── Dockerfile             # V2: ROS2 Humble + PyTorch runtime
 ```
+
+Both models are **PyTorch**. `src/` is the runtime library and depends on nothing in
+`scripts/`; `scripts/` is build tooling that produces the artifacts `src/` loads.
+
+---
+
+## The papers
+
+Both models are reimplementations of published methods, not novel architectures. That is
+deliberate: the thesis selected these model classes, so the contribution here is a faithful,
+verifiable build of them.
+
+| Component | Paper |
+|---|---|
+| **Detection** | Brockmann, Rudolph, Rosenhahn & Wandt (2023), *The voraus-AD Dataset for Anomaly Detection in Robot Applications*, arXiv:2311.04765 |
+| **Prediction** | Li, Ding & Sun (2018), *Remaining useful life estimation in prognostics using deep convolution neural networks*, Reliability Engineering & System Safety 172, 1–11 |
+
+The notebooks cite these **by section, table and page** for every hyperparameter and design
+choice, so any part of the implementation can be checked against its source. Deviations are
+labelled as such — for example this repo feeds the RUL model 17 features (the paper's 14
+sensors plus the 3 operational settings), and the MVT-Flow soft-clamping constant is our
+choice because the paper defines the parameter but never gives it a value.
 
 ---
 
 ## Data
 
-Data provenance matters for interpreting the results, so it is stated plainly here:
+Stated plainly, because it matters for reading the results:
 
-- **Detection** is trained on **voraus-AD** (Brockmann et al., 2023) — a *real* robot
-  anomaly-detection dataset (130 signals, pick-and-place manipulator), **not**
-  autonomous-delivery-robot data.
-- **Prediction** is trained on **NASA C-MAPSS FD001** — aircraft **turbofan**
-  run-to-failure data, a standard RUL benchmark, again not robot data.
-- The 4-channel ADR reading (temperature, vibration, torque, current — proprioceptive
-  sensors from the thesis's ADR sensor set) fed to the RUL stage is mapped to C-MAPSS
-  features by a **hand-built proxy ("virtual sensor abstraction")** in `src/prediction.py`.
-  This is a deliberate stand-in, **not** a learned or physically-calibrated mapping.
-
-A small slice of the **real** C-MAPSS test set (3 windows + true RUL labels) is
-committed at `data/samples/cmapss_sample_*.npy` so the RUL model can be validated on
-genuine benchmark data, independently of the ADR proxy above.
+- **Detection** is trained on **voraus-AD** — a *real* robot anomaly-detection dataset
+  (130 signals, 6-axis pick-and-place manipulator), but **not** delivery-robot data.
+- **Prediction** is trained on **NASA C-MAPSS FD001** — aircraft turbofan run-to-failure
+  data, the standard RUL benchmark, also not robot data.
+- The 4-channel ADR reading feeding the RUL stage is mapped onto C-MAPSS features by a
+  **hand-built proxy** in `src/prediction.py`. It is a deliberate stand-in, not a learned or
+  physically calibrated mapping.
 
 **Why proxy data?** As the thesis discusses, a public run-to-failure dataset from real
-autonomous-delivery-robot sensor streams **does not yet exist** — a well-known, field-wide
-limitation of ADR predictive maintenance, not a shortcut specific to this project. The
-pipeline is therefore validated on the closest available public proxies. Retraining on real
-ADR degradation data, once it exists, is the natural next step.
+autonomous-delivery-robot sensor streams **does not yet exist** — a field-wide limitation,
+not a shortcut specific to this project. The pipeline is therefore validated on the closest
+available public proxies, and retraining on real ADR degradation data is the natural next
+step once such data exists.
+
+A slice of the **real** C-MAPSS test set (3 windows + true RUL labels) is committed at
+`data/samples/cmapss_sample_*.npy`, so the RUL model can be checked on genuine benchmark
+data independently of the proxy.
 
 ---
 
 ## How to run it
 
 ```bash
-# 1. clone, then create an environment (Python 3.10–3.13)
+# Python 3.10–3.13
 python3 -m venv .venv && source .venv/bin/activate
-
-# 2. install dependencies
 pip install -r requirements.txt
-
-# 3. run the end-to-end demo
 python run_demo.py
 ```
 
-`run_demo.py` runs fully real out of the box: the trained MVT-Flow detector and Li et al.
-RUL model are both committed under `models/`. If a weight file is ever missing, detection
-falls back to a clearly-labelled synthetic scorer and RUL to a placeholder, so the demo
-always runs top to bottom. Retrain either model with the scripts below.
+Runs fully real out of the box — both trained models are committed. If a weight file is ever
+missing, detection falls back to a clearly-labelled synthetic scorer and RUL to a placeholder,
+so the demo always completes.
 
-### Training the models
+### Retraining
 
-Both trainers go from raw public data to saved weights in one command — preprocessing,
-windowing, training and evaluation included.
+Each trainer goes from raw public data to saved weights in one command:
 
 ```bash
-# RUL — Li et al. (2018) CNN on NASA C-MAPSS FD001 (~5 min, CPU is fine).
-# Download the free C-MAPSS set; point at the folder with train_FD001.txt / RUL_FD001.txt.
+# RUL — Li et al. CNN on C-MAPSS FD001 (~5-10 min, CPU is fine)
 python scripts/train_rul.py --cmapss-dir /path/to/CMAPSSData
-#   → writes models/rul_cnn.pt + models/normalization_stats.json
+#   → models/rul_cnn.pt + models/normalization_stats.json
 
-# Detection — MVT-Flow on the voraus-AD parquet (GPU recommended).
-# Locally:
+# Detection — MVT-Flow on the voraus-AD parquet (GPU recommended)
 python scripts/train_mvtflow.py --parquet /path/to/voraus-ad-dataset-100hz.parquet
-# or on a GPU in Colab: open notebooks/detection_01_mvt_flow_training.ipynb → Run all
-#   → writes models/mvt_flow_voraus_ad.pt + scaler_voraus_ad.pkl + voraus_thresholds.json
+#   → models/mvt_flow_voraus_ad.pt + scaler_voraus_ad.pkl + voraus_thresholds.json
 ```
 
-After training, re-run `python run_demo.py` for fully real, end-to-end results.
+`notebooks/` contains the same two runs broken into readable stages, with the paper citations
+attached. `notebooks/detection_01_mvt_flow_training.ipynb` is Colab-ready for a free GPU.
 
 ---
 
 ## Results
 
-### Detection — real, out of the box
+Single runs with default settings, reported as measured.
 
-`run_demo.py` scores real voraus-AD windows and the fusion safety-override fires correctly:
+### Detection
+
+`run_demo.py` on real voraus-AD windows:
 
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
-  Detection : healthy   score=-429147.5   [MVT-Flow]
+  Detection : healthy   score=-429147.66  [MVT-Flow]
   Prediction: RUL=47 cycles  urgency=urgent
-  -> Action : schedule_maintenance_soon   (healthy status, but short RUL → PLAN)
-  -> Operator: 📅 PLAN: schedule maintenance within the window
+  -> Action : schedule_maintenance_soon   (healthy status, short RUL → PLAN)
 
 SCENARIO: Degraded / fault    (detection window: real sample)
-  Detection : anomaly   score=2726343.25  [MVT-Flow]
+  Detection : anomaly   score=2726343.0   [MVT-Flow]
   -> Action : stop_and_inspect  (priority: critical)
-  -> Operator: ⛔ STOP: halt the robot and inspect immediately
 ```
 
-The two rows exercise different parts of the thesis decision matrix: a healthy status with
-a short RUL yields `PLAN`, while a live anomaly overrides everything to `STOP`.
+**AUROC = 0.946** on a held-out normal/anomaly split (seed 42) — above the paper's 0.936,
+which is a mean over 9 runs, so read this as a strong single split rather than a matched
+benchmark.
 
-**AUROC = 0.946** on a held-out normal/anomaly split (`scripts/train_mvtflow.py`, seed 42) —
-slightly above the paper's 0.936, which is a mean over 9 runs, so read this as a strong
-single-split result rather than a matched benchmark. MVT-Flow scores are unbounded
-log-likelihoods, so the healthy/warning/anomaly thresholds are calibrated on real normal
-windows only — Tukey fences over the normal-score distribution (warning = Q3 + 1.5·IQR,
-anomaly = Q3 + 3·IQR → `models/voraus_thresholds.json`). Calibration stays normal-only on
-purpose: the anomaly set evaluates the thresholds but never sets them, matching how a fleet
-without labelled faults would actually be commissioned. Calibration and inference share
-preprocessing, so the decision is self-consistent.
+MVT-Flow scores are unbounded log-likelihoods, so the thresholds are calibrated on **normal
+windows only** — Tukey fences (warning = Q3 + 1.5·IQR, anomaly = Q3 + 3·IQR). Calibration
+stays normal-only on purpose: the anomaly set evaluates the thresholds but never sets them,
+matching how a fleet without labelled faults would actually be commissioned.
 
-> **Note:** the committed `voraus_thresholds.json` predates this scheme (it was written
-> with warning = p95 / anomaly = p99 of the normal scores, which makes the warning band
-> four percentiles of the normal tail — so narrow that `warning` effectively never fires).
-> Re-run `scripts/calibrate_detection.py` against the voraus-AD parquet to regenerate it.
+> **Note:** the committed `voraus_thresholds.json` predates this scheme (it used p95/p99 of
+> the normal scores, which makes the warning band four percentiles of the normal tail — so
+> narrow that `warning` effectively never fires). Re-run `scripts/calibrate_detection.py`
+> against the parquet to regenerate it.
 
 ### RUL
 
-Trained by `scripts/train_rul.py` on C-MAPSS FD001 — **test RMSE = 17.5** (an untuned
-single run; Li et al. report ≈ 12.6). The demo validates it on three real, pre-normalized
-C-MAPSS test windows fed straight to the model (no ADR proxy):
+**Test RMSE = 17.5** against the official C-MAPSS labels (Li et al. report ≈ 12.6 tuned).
+The demo also scores three real, pre-normalized C-MAPSS test windows with no proxy involved:
 
 ```
 window 0: predicted RUL =   9.9 cycles  |  true RUL =   7
@@ -210,43 +255,47 @@ window 1: predicted RUL =  72.1 cycles  |  true RUL =  87
 window 2: predicted RUL = 120.1 cycles  |  true RUL = 145
 ```
 
-Predictions track true RUL across the degradation range — a genuine check on the model's
-own benchmark domain.
-
-**Component references:**
-- Detection: MVT-Flow from the voraus-AD paper (Brockmann et al., 2023, arXiv:2311.04765).
-- Prediction: RUL CNN follows Li et al. (2018), *"Remaining useful life estimation in
-  prognostics using deep convolution neural networks."*
+Predictions track true RUL across the degradation range — a genuine check on the model's own
+benchmark domain.
 
 ---
 
-## Limitations & Next Steps
+## Limitations
 
-Framed as a roadmap, not an apology — these are the honest edges of a portfolio prototype:
+Honest edges, not apologies:
 
-- **Real ROS2 exists, but not on hardware.** The pipeline ships as real `rclpy` nodes over
-  DDS topics (`ros2_ws/`, run via Docker — see `docs/ROS2.md`), so the edge/cloud boundary is
-  genuine ROS2, not a simulation of it. What's still missing is deployment on an actual robot
-  (real sensor drivers, a Gazebo/hardware bring-up, network-distributed edge and cloud hosts).
-- **Proxy data, not real ADR streams.** Detection uses voraus-AD, prediction uses
-  C-MAPSS, and the ADR→C-MAPSS sensor mapping is a hand-built proxy. Real ADR
-  run-to-failure data does not yet exist publicly (see *Data*).
-- **Metrics are single-run, not tuned.** Detection AUROC 0.946 and RUL RMSE 17.5 come from
-  one training run each with default hyperparameters; the papers report better figures with
-  ensembling/tuning. They are honest illustrations, not a benchmark-chasing effort.
-- **No real-time performance testing.** Latency/throughput claims are not benchmarked;
-  inference is validated for correctness, not speed.
-- **No production hardening.** No input validation at API boundaries, no monitoring, no
-  retraining loop, no model versioning/serving.
-- **RUL confidence is a placeholder.** The CNN is a point-estimate regressor; the
-  reported confidence is a constant, not calibrated uncertainty.
+- **Proxy data, not real ADR streams.** Detection uses voraus-AD, prediction uses C-MAPSS,
+  and the ADR→C-MAPSS mapping is hand-built (see *Data*).
+- **Metrics are single-run and untuned.** AUROC 0.946 and RMSE 17.5 come from one run each
+  with the papers' default settings; both papers report better figures with tuning and
+  ensembling.
+- **RUL resolution is capped.** The model is trained against a piecewise-linear target capped
+  at 125 cycles, so it cannot distinguish beyond that horizon; the urgency bands are scaled
+  to that range accordingly.
+- **No real-time performance testing.** Inference is validated for correctness, not latency.
+- **No production hardening.** No input validation for malformed sensor data, no monitoring,
+  no retraining loop, no model versioning or serving.
+- **RUL confidence is a placeholder.** The CNN is a point-estimate regressor; the reported
+  confidence is a constant, not calibrated uncertainty.
 
-**Next steps:** obtain real ADR degradation data → replace the proxy mapping → add
-calibrated uncertainty (e.g. an aleatoric two-head RUL variant) → benchmark inference
-latency → run the ROS2 nodes on real robot/edge/cloud hosts with live sensor drivers.
+---
+
+## Roadmap
+
+V1 is the pipeline. Later versions add the layers around it:
+
+- **V2 — deployment (in progress, on `main`).** Real ROS2 Humble nodes (rclpy, custom
+  `.msg` interfaces, DDS transport) running the same models in a container, matching the
+  thesis's edge/cloud reference architecture. Working end to end; see
+  [`docs/ROS2.md`](docs/ROS2.md).
+- **V3 — fleet & interface.** Multiple robots, decision history, and an operator-facing
+  fleet health view.
+- **Beyond.** Real ADR degradation data to replace the proxy mapping, calibrated uncertainty
+  on the RUL estimate, and latency benchmarking.
 
 ---
 
 ## License
 
-Released under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE). The referenced papers and the thesis are not part
+of this repository and remain with their respective authors and publishers.
