@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from prediction import PredictionInterface   # noqa: E402
 from fusion import MaintenanceFusion          # noqa: E402
-from messages import StateMsg, DetectionMsg, PredictionMsg, DecisionMsg, Header, TOPICS   # noqa: E402
+from messages import StateMsg, DetectionMsg, PredictionMsg, DecisionMsg, Header   # noqa: E402
 
 # Fusion action code → plain-language operator instruction (application-layer output).
 ACTION_MESSAGE = {
@@ -33,9 +33,6 @@ ACTION_MESSAGE = {
 
 class CloudNode:
     """Cloud backend: RUL prognostics + the maintenance decision matrix."""
-
-    LAYER = "cloud"
-    PUBLISHES = (TOPICS["prediction"], TOPICS["decision"])
 
     def __init__(self, model_path: str = None):
         self.predictor = PredictionInterface(model_path) if model_path else PredictionInterface()

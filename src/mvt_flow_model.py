@@ -327,20 +327,3 @@ class MVTFlowDetector:
         return scores.cpu().numpy()
     
 
-# Example usage
-if __name__ == "__main__":
-    # Example: Load and use MVT-Flow detector
-    model_path = "../models/mvt_flow_voraus_ad.pt"
-    scaler_path = "../models/scaler_voraus_ad.pkl"
-    
-    detector = MVTFlowDetector(
-        model_path=model_path,
-        scaler_path=scaler_path,
-        n_signals=130,
-        n_timesteps=1100
-    )
-    
-    # Example inference
-    dummy_data = np.random.randn(1, 130, 1100)
-    scores = detector.predict_anomaly_score(dummy_data)
-    print(f"Anomaly score: {scores[0]:.2f}")

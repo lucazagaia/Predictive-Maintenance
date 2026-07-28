@@ -19,14 +19,11 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
 
 from detection import MVTFlowDetectionInterface   # noqa: E402
-from messages import StateMsg, DetectionMsg, Header, TOPICS   # noqa: E402
+from messages import StateMsg, DetectionMsg, Header   # noqa: E402
 
 
 class EdgeNode:
-    """On-robot detection node. `LAYER` marks where it is deployed in the architecture."""
-
-    LAYER = "edge"
-    PUBLISHES = TOPICS["detection"]
+    """On-robot detection node."""
 
     def __init__(self, model_path: str, scaler_path: str,
                  window_size: int = 1100, n_signals: int = 130):

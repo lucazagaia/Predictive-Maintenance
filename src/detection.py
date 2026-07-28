@@ -45,21 +45,18 @@ class MVTFlowDetectionInterface:
         model_path: str,
         scaler_path: str,
         window_size: int = 1100,
-        sampling_rate: int = 100,  # Hz
         n_signals: int = 130
     ):
         """
         Initialize MVT-Flow detection interface.
-        
+
         Args:
             model_path: Path to trained MVT-Flow .pt file
             scaler_path: Path to StandardScaler .pkl file
             window_size: Time series window length (default: 1100 = 11 seconds at 100 Hz)
-            sampling_rate: Sensor sampling rate in Hz (default: 100)
             n_signals: Number of sensor channels (default: 130)
         """
         self.window_size = window_size
-        self.sampling_rate = sampling_rate
         self.n_signals = n_signals
         
         # Initialize the MVT-Flow detector. The trained weights live outside the repo

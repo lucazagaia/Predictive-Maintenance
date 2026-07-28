@@ -25,15 +25,18 @@ Training a model has **two entry points on purpose**, matching where each model 
 
 You do **not** need any notebook to try the pipeline — use `run_demo.py`.
 
-## Exploratory notebooks (design documentation, not trainers)
+## Exploratory notebook (design documentation, not a trainer)
 
 | Notebook | Purpose | Dataset |
 |----------|---------|---------|
-| `detection_00_preprocess_voraus.ipynb` | Inspecting/standardizing voraus-AD signals | voraus-AD |
 | `prediction_01_li_cnn_modeling.ipynb` | Li et al. (2018) architecture walkthrough (original Keras exploration) | C-MAPSS FD001 |
 
-These predate the scripts and assume a Colab environment; they are kept as a record of the
-design process. Note `prediction_01` is the **original Keras** exploration — the shipped RUL
-model is now PyTorch (`scripts/train_rul.py`, `src/rul_model.py`); the notebook is history, not
-the current pipeline. The earlier `prediction_00_preprocess_cmapss.ipynb` was removed — it
-operated on an unrelated dataset with helper imports that no longer exist.
+This predates the scripts and assumes a Colab environment; it is kept as a record of the
+design process. Note it is the **original Keras** exploration — the shipped RUL model is now
+PyTorch (`scripts/train_rul.py`, `src/rul_model.py`), so the notebook is history, not the
+current pipeline.
+
+Two earlier notebooks were removed: `prediction_00_preprocess_cmapss.ipynb` operated on an
+unrelated dataset with helper imports that no longer exist, and
+`detection_00_preprocess_voraus.ipynb` contained no preprocessing — only an environment-setup
+cell and a markdown summary of the dataset, which the README and `docs/` already cover.
