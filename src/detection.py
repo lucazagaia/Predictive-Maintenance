@@ -9,18 +9,20 @@ detection on robot machine data. It consumes multivariate time-series windows
     (130 x 1100)                       (PyTorch)   (neg. log-lik.)
 
 The anomaly score is a negative log-likelihood (unbounded), so the status thresholds are
-calibrated on normal data rather than fixed — see __init__ and calibrate_thresholds.
+calibrated on normal data rather than fixed: scripts/calibrate_detection.py writes
+models/voraus_thresholds.json, which this interface requires at load time.
 
 Based on: Brockmann et al. (2023), The voraus-AD Dataset for Anomaly Detection in Robot
 Applications (arXiv:2311.04765).
 """
 
-import numpy as np
+import json
 import sys
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Tuple
-from collections import deque
+from pathlib import Path
+from typing import Dict
+
+import numpy as np
 
 # mvt_flow_model.py lives alongside this file in src/
 sys.path.append(str(Path(__file__).parent))
@@ -80,97 +82,33 @@ class MVTFlowDetectionInterface:
             self.detector = None
 
         # Decision thresholds live with the scoring mode, because the two modes emit
-        # scores on very different scales. MVT-Flow scores are unbounded log-likelihoods,
-        # so they are meaningless without calibration on normal data — the hardcoded
-        # numbers below are only placeholders. If a calibration file produced from real
-        # normal windows sits next to the weights, it overrides them (see README →
-        # "Calibrating detection").
+        # scores on very different scales. MVT-Flow scores are unbounded log-likelihoods
+        # whose range depends entirely on the trained weights, so there is no meaningful
+        # default: they must come from calibration on real normal windows
+        # (scripts/calibrate_detection.py writes voraus_thresholds.json next to the
+        # weights). Without that file every window would score below an invented
+        # threshold and be reported "healthy", so we refuse to guess.
         if self.model_loaded:
             self.mode = "MVT-Flow"
-            self.warning_threshold = 74500.0
-            self.anomaly_threshold = 75000.0
             thr_path = Path(model_path).with_name("voraus_thresholds.json")
-            if thr_path.exists():
-                import json
-                thr = json.loads(thr_path.read_text())
-                self.warning_threshold = float(thr["warning_threshold"])
-                self.anomaly_threshold = float(thr["anomaly_threshold"])
-                print(f"Loaded calibrated thresholds: "
-                      f"warn={self.warning_threshold:.0f}  anomaly={self.anomaly_threshold:.0f}")
+            if not thr_path.exists():
+                raise FileNotFoundError(
+                    f"Calibrated thresholds not found: {thr_path}. MVT-Flow scores are "
+                    "unbounded log-likelihoods and cannot be thresholded without "
+                    "calibration — run scripts/calibrate_detection.py."
+                )
+            thr = json.loads(thr_path.read_text())
+            self.warning_threshold = float(thr["warning_threshold"])
+            self.anomaly_threshold = float(thr["anomaly_threshold"])
+            print(f"Loaded calibrated thresholds: "
+                  f"warn={self.warning_threshold:.0f}  anomaly={self.anomaly_threshold:.0f}")
         else:
+            # The synthetic fallback emits a bounded [0, 1] pseudo-score, so fixed cuts
+            # are meaningful here.
             self.mode = "synthetic-fallback"
             self.warning_threshold = 0.5
             self.anomaly_threshold = 0.8
-        
-        # Initialize sliding window buffer for real-time streaming
-        # Each sensor gets its own deque for efficient append/pop
-        self.sensor_buffers = {
-            f"sensor_{i}": deque(maxlen=window_size) 
-            for i in range(n_signals)
-        }
-        self.buffer_filled = False
-        
-        # Anomaly score statistics for threshold calibration
-        self.score_history = deque(maxlen=1000)
-        self.normal_threshold = None
-    
-    def update_sensor_reading(self, sensor_data: Dict[str, float]) -> Dict:
-        """
-        Process single timestep of sensor data (real-time streaming mode).
-        
-        This method handles real-time data streams where sensors send
-        readings one timestep at a time (100 Hz sampling).
-        
-        Args:
-            sensor_data: Dictionary mapping sensor names to values
-                        {"sensor_0": 0.5, "sensor_1": 0.3, ...}
-        
-        Returns:
-            Robot status decision (or None if window not yet filled)
-        """
-        # Update sliding window buffer
-        for sensor_name, value in sensor_data.items():
-            if sensor_name in self.sensor_buffers:
-                self.sensor_buffers[sensor_name].append(value)
-        
-        # Check if we have enough data for a complete window
-        if not self.buffer_filled:
-            buffer_sizes = [len(buf) for buf in self.sensor_buffers.values()]
-            if min(buffer_sizes) >= self.window_size:
-                self.buffer_filled = True
-                print(f"Buffer filled: {self.window_size} timesteps ready")
-        
-        # Only make predictions once buffer is filled
-        if self.buffer_filled:
-            # Extract current window from buffers
-            window_data = self._extract_window_from_buffers()
-            
-            # Run anomaly detection on window
-            return self.get_robot_status(window_data)
-        else:
-            return {
-                "status": "initializing",
-                "confidence": 0.0,
-                "details": f"Buffering data: {min([len(b) for b in self.sensor_buffers.values()])}/{self.window_size}",
-                "timestamp": datetime.now().isoformat()
-            }
-    
-    def _extract_window_from_buffers(self) -> np.ndarray:
-        """
-        Extract current time window from sliding buffers.
-        
-        Returns:
-            Window data of shape (1, n_signals, window_size)
-        """
-        window = np.zeros((1, self.n_signals, self.window_size))
-        
-        for i in range(self.n_signals):
-            sensor_name = f"sensor_{i}"
-            if sensor_name in self.sensor_buffers:
-                window[0, i, :] = list(self.sensor_buffers[sensor_name])
-        
-        return window
-    
+
     def get_robot_status(self, sensor_window: np.ndarray) -> Dict:
         """
         Primary interface: Convert sensor window → Robot health status.
@@ -193,12 +131,13 @@ class MVTFlowDetectionInterface:
         if sensor_window.ndim == 2:
             sensor_window = sensor_window[np.newaxis, :, :]
         
-        # Validate input shape
+        # Validate input shape. Raised rather than asserted: `python -O` strips asserts,
+        # which would let a malformed window reach the model silently.
         n_samples, n_signals, n_timesteps = sensor_window.shape
-        assert n_signals == self.n_signals, \
-            f"Expected {self.n_signals} signals, got {n_signals}"
-        assert n_timesteps == self.window_size, \
-            f"Expected {self.window_size} timesteps, got {n_timesteps}"
+        if n_signals != self.n_signals:
+            raise ValueError(f"Expected {self.n_signals} signals, got {n_signals}")
+        if n_timesteps != self.window_size:
+            raise ValueError(f"Expected {self.window_size} timesteps, got {n_timesteps}")
         
         # Score the window: the real MVT-Flow model when its weights are loaded,
         # otherwise the synthetic fallback. Both branches assign anomaly_score.
@@ -207,13 +146,7 @@ class MVTFlowDetectionInterface:
         else:
             anomaly_score = self._synthetic_score(sensor_window)
 
-        # Update score history
-        self.score_history.append(anomaly_score)
-        
-        # Convert score to operational status
-        status_result = self._convert_to_robot_status(anomaly_score)
-        
-        return status_result
+        return self._convert_to_robot_status(anomaly_score)
     
     def _detect_anomaly_mvtflow(self, sensor_window: np.ndarray) -> float:
         """
@@ -243,20 +176,17 @@ class MVTFlowDetectionInterface:
 
     def _convert_to_robot_status(self, anomaly_score: float) -> Dict:
         """
-        Convert raw anomaly score to actionable robot status.
-        
-        THRESHOLD CALIBRATION:
-        ---------------------
-        For MVT-Flow, anomaly scores are negative log probabilities.
-        Typical ranges on voraus-AD:
-        - Normal: 73,000 - 74,500
-        - Anomaly: 74,500 - 76,000+
-        
-        These thresholds should be calibrated on validation data.
-        
+        Convert a raw anomaly score to an actionable robot status.
+
+        MVT-Flow scores are negative log-likelihoods: unbounded, and on a scale set by
+        the trained weights (the shipped model produces roughly -4.3e5 for normal windows
+        and +2.7e6 for anomalous ones — sign and magnitude are both weight-dependent, so
+        never assume a range). Thresholds therefore always come from calibration on
+        normal data, never from a constant in this file.
+
         Args:
-            anomaly_score: Raw MVT-Flow output (negative log probability)
-        
+            anomaly_score: Raw MVT-Flow output (negative log-likelihood)
+
         Returns:
             Structured robot status
         """
@@ -292,43 +222,3 @@ class MVTFlowDetectionInterface:
             "timestamp": datetime.now().isoformat(),
             "model": self.mode
         }
-    
-    def calibrate_thresholds(
-        self,
-        normal_data: np.ndarray,
-        percentile: float = 95.0
-    ):
-        """
-        Calibrate anomaly thresholds using normal validation data.
-        
-        This should be called once with a representative sample of normal
-        operation data to establish baseline thresholds.
-        
-        Args:
-            normal_data: Normal sensor windows (n_samples, n_signals, n_timesteps)
-            percentile: Percentile for threshold (default: 95 = allow 5% false positives)
-        """
-        if not self.model_loaded:
-            print("Model not loaded, cannot calibrate")
-            return
-        
-        print(f"Calibrating thresholds on {len(normal_data)} normal samples...")
-        
-        # Compute anomaly scores for all normal samples
-        scores = self.detector.predict_anomaly_score(normal_data)
-        
-        # Set thresholds at the specified percentile of normal scores.
-        self.normal_threshold = float(np.percentile(scores, percentile))
-        self.warning_threshold = self.normal_threshold
-        self.anomaly_threshold = self.normal_threshold + 500.0
-
-        print(f"Threshold calibrated: {self.normal_threshold:.2f}")
-        print(f"   Mean normal score: {scores.mean():.2f} ± {scores.std():.2f}")
-        print(f"   {percentile}th percentile: {self.normal_threshold:.2f}")
-    
-    def reset_buffer(self):
-        """Clear sliding window buffer (for starting fresh monitoring)."""
-        for buffer in self.sensor_buffers.values():
-            buffer.clear()
-        self.buffer_filled = False
-        print("Buffer reset")

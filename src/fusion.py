@@ -156,14 +156,14 @@ if __name__ == "__main__":
     lead to different maintenance actions and priorities.
     """
     print("=" * 70)
-    print("🧠 FUSION LAYER DECISION TESTING")
+    print("FUSION LAYER DECISION TESTING")
     print("=" * 70)
     
     fusion = MaintenanceFusion()
     
     # Test Scenario 1: Healthy robot with good RUL
     # Expected: Continue normal operations
-    print("\n📋 Scenario 1: Healthy Robot + Good RUL")
+    print("\nScenario 1: Healthy Robot + Good RUL")
     print("-" * 70)
     detection = {"status": "healthy", "confidence": 0.85, "details": "Normal operation"}
     prediction = {"rul_cycles": 300, "urgency": "planned", "maintenance_window": "1-2 months"}
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     
     # Test Scenario 2: Anomaly detected
     # Expected: Immediate stop and inspection (highest priority)
-    print("\n📋 Scenario 2: Anomaly Detected")
+    print("\nScenario 2: Anomaly Detected")
     print("-" * 70)
     detection = {"status": "anomaly", "confidence": 0.92, "details": "High vibration detected"}
     prediction = {"rul_cycles": 150, "urgency": "soon", "maintenance_window": "2-3 weeks"}
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     
     # Test Scenario 3: Healthy but low RUL
     # Expected: Schedule maintenance soon (medium priority)
-    print("\n📋 Scenario 3: Healthy Robot + Low RUL")
+    print("\nScenario 3: Healthy Robot + Low RUL")
     print("-" * 70)
     detection = {"status": "healthy", "confidence": 0.78, "details": "Normal operation"}
     prediction = {"rul_cycles": 45, "urgency": "immediate", "maintenance_window": "< 1 week"}
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     
     # Test Scenario 4: Warning with low RUL
     # Expected: Urgent maintenance (high priority)
-    print("\n📋 Scenario 4: Warning Status + Low RUL")
+    print("\nScenario 4: Warning Status + Low RUL")
     print("-" * 70)
     detection = {"status": "warning", "confidence": 0.65, "details": "Elevated temperature and vibration"}
     prediction = {"rul_cycles": 40, "urgency": "immediate", "maintenance_window": "< 1 week"}
@@ -214,5 +214,5 @@ if __name__ == "__main__":
     print(f"→ Reasoning: {decision['reasoning']}")
     
     print("\n" + "=" * 70)
-    print("✅ Fusion layer demonstration complete!")
+    print("Fusion layer demonstration complete!")
     print("=" * 70)

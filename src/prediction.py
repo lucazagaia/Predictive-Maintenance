@@ -115,7 +115,7 @@ class PredictionInterface:
         - Converts ADR robot sensors → C-MAPSS turbofan format  
         - Creates 17 features (3 settings + 14 sensors) from 4 ADR sensors
         - Maintains sliding window of 30 timesteps for time series analysis
-        - Normalizes features to [0,1] range for model compatibility
+        - Normalizes features to the [-1, 1] range the model was trained on
         - Enables RUL models trained on aircraft data to work on robots
         
         Args:
@@ -311,8 +311,8 @@ class PredictionInterface:
         This normalizes to [-1, 1] range (not [0, 1])
         
         Args:
-            features: Raw C-MAPSS features [15 values]
-            
+            features: Raw C-MAPSS features [17 values]
+
         Returns:
             Normalized features in [-1,1] range
         """
@@ -331,8 +331,6 @@ class PredictionInterface:
         feature_max = self.normalization_stats["feature_max"]
         
         for i, col in enumerate(feature_columns):
-            if i >= len(features):
-                break
             min_val = feature_min[col]
             max_val = feature_max[col]
             

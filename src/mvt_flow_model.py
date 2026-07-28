@@ -19,7 +19,7 @@ Author: Luca Zagaia
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import Tuple, List, Optional
+from typing import List, Tuple
 import pickle
 from pathlib import Path
 
@@ -326,59 +326,6 @@ class MVTFlowDetector:
         
         return scores.cpu().numpy()
     
-    def predict_anomaly_probability(
-        self, 
-        X: np.ndarray,
-        normal_threshold: float = None
-    ) -> np.ndarray:
-        """
-        Convert anomaly scores to probabilities [0, 1].
-        
-        Args:
-            X: Raw sensor data
-            normal_threshold: Anomaly score threshold for normal data
-                            (typically computed from validation set)
-        
-        Returns:
-            Anomaly probabilities [0, 1]
-        """
-        scores = self.predict_anomaly_score(X)
-        
-        if normal_threshold is None:
-            # Use simple sigmoid transformation
-            # Map scores to [0, 1] with reasonable defaults
-            mean_score = scores.mean()
-            std_score = scores.std()
-            
-            # Normalize to z-scores, then sigmoid
-            z_scores = (scores - mean_score) / (std_score + 1e-8)
-            probabilities = 1 / (1 + np.exp(-z_scores))
-        else:
-            # Use threshold-based approach
-            # Scores above threshold map to high probability
-            excess = scores - normal_threshold
-            probabilities = 1 / (1 + np.exp(-excess / 1000))  # Scale factor for smooth transition
-        
-        return probabilities
-    
-    def predict(
-        self,
-        X: np.ndarray,
-        threshold: float = 0.5
-    ) -> np.ndarray:
-        """
-        Binary anomaly predictions.
-        
-        Args:
-            X: Raw sensor data
-            threshold: Probability threshold for anomaly classification
-        
-        Returns:
-            Binary predictions (0=normal, 1=anomaly)
-        """
-        probabilities = self.predict_anomaly_probability(X)
-        return (probabilities >= threshold).astype(int)
-
 
 # Example usage
 if __name__ == "__main__":
