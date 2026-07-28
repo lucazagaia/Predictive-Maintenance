@@ -1,42 +1,48 @@
 # Notebooks
 
-**How the models were originally trained → how that was made reproducible.** The models were
-trained interactively on **Google Colab** (these notebooks — GPU runtime, Drive mounts,
-`gdown`). That setup is convenient for the compute but **Colab-locked**: `google.colab`,
-Drive mounts and `gdown` don't run on a normal machine, so a reviewer can't reproduce it as-is.
-The training was therefore **adapted into portable `scripts/`** that run anywhere with one
-command. Both are kept on purpose: the notebooks show *how it was done*, the scripts make it
-*reproducible by anyone*.
+Both models have a **notebook and a script**, on purpose. The scripts are the canonical,
+one-command trainers — they produced the shipped weights and are what CI or a reviewer
+should run. The notebooks are the same pipeline broken into readable stages, so you can
+follow (and re-run) preprocessing → architecture → training → evaluation step by step, and
+so the GPU-heavy detector can be trained on a free Colab runtime.
 
-Training a model has **two entry points on purpose**, matching where each model is best run:
-
-| | Canonical (local / CLI) | Colab (free GPU) |
+| Model | Canonical trainer (local / CLI) | Notebook |
 |---|---|---|
-| RUL (light, CPU-fine) | `scripts/train_rul.py` | — |
-| MVT-Flow (heavy, wants a GPU) | `scripts/train_mvtflow.py` | `detection_01_mvt_flow_training.ipynb` |
+| Detection — MVT-Flow (GPU-friendly) | `scripts/train_mvtflow.py` | `detection_01_mvt_flow_training.ipynb` |
+| RUL — Li et al. CNN (CPU is fine) | `scripts/train_rul.py` | `prediction_01_li_cnn_modeling.ipynb` |
 
-- **`scripts/`** are the reproducible, one-command trainers — no GPU or Colab assumptions.
-  Use these to reproduce a model anywhere.
-- **`detection_01_mvt_flow_training.ipynb`** is the same MVT-Flow training run, packaged for
-  a **Colab GPU** (the normalizing-flow training is the one compute-heavy step). It is
-  self-contained — it carries its own copy of the model + training code rather than importing
-  the repo — so it runs in Colab without cloning a private repository. Treat it as the
-  GPU counterpart of `scripts/train_mvtflow.py`, not a second source of truth.
+The notebooks are **self-contained**: each carries its own copy of the model and training
+code rather than importing the repo, so it runs in Colab without cloning anything. They are
+not a second source of truth — the code in them is lifted from the scripts, and the scripts
+win if the two ever disagree.
 
 You do **not** need any notebook to try the pipeline — use `run_demo.py`.
 
-## Exploratory notebook (design documentation, not a trainer)
+## Which file is responsible for what
 
-| Notebook | Purpose | Dataset |
-|----------|---------|---------|
-| `prediction_01_li_cnn_modeling.ipynb` | Li et al. (2018) architecture walkthrough (original Keras exploration) | C-MAPSS FD001 |
+Each notebook opens with this mapping, repeated here for orientation:
 
-This predates the scripts and assumes a Colab environment; it is kept as a record of the
-design process. Note it is the **original Keras** exploration — the shipped RUL model is now
-PyTorch (`scripts/train_rul.py`, `src/rul_model.py`), so the notebook is history, not the
-current pipeline.
+| Stage | Detection (voraus-AD) | Prediction (C-MAPSS) |
+|---|---|---|
+| Preprocessing + windowing | `scripts/train_mvtflow.py` | `scripts/train_rul.py` |
+| Network definition | `src/mvt_flow_model.py` | `src/rul_model.py` |
+| Training + evaluation | `scripts/train_mvtflow.py` | `scripts/train_rul.py` |
+| Threshold calibration | `scripts/calibrate_detection.py` | — (RUL bands are in `src/prediction.py`) |
+| Inference on live data | `src/detection.py` | `src/prediction.py` |
+| Decision from model output | `src/fusion.py` | `src/fusion.py` |
+| Edge / cloud wiring | `src/edge.py`, `src/cloud.py` (and `ros2_ws/` for real ROS2) | |
 
-Two earlier notebooks were removed: `prediction_00_preprocess_cmapss.ipynb` operated on an
-unrelated dataset with helper imports that no longer exist, and
-`detection_00_preprocess_voraus.ipynb` contained no preprocessing — only an environment-setup
-cell and a markdown summary of the dataset, which the README and `docs/` already cover.
+## Datasets
+
+- **voraus-AD** (Brockmann et al. 2023) — 100 Hz parquet, ~1 GB. Not in the repo; the
+  detection notebook downloads it.
+- **NASA C-MAPSS FD001** — free download; the RUL notebook needs `train_FD001.txt`,
+  `RUL_FD001.txt` and `test_FD001.txt`.
+
+## Removed notebooks
+
+`prediction_00_preprocess_cmapss.ipynb` operated on an unrelated dataset with helper imports
+that no longer exist. `detection_00_preprocess_voraus.ipynb` contained no preprocessing —
+only an environment-setup cell and a markdown dataset summary already covered by the README
+and `docs/`. The earlier Keras version of `prediction_01` was replaced by the PyTorch
+notebook above, which mirrors the trainer that produced the shipped model.
