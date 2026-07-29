@@ -37,8 +37,10 @@ deployment. The diagram is a conceptual restatement and does not reproduce thesi
 | `/cloud/prediction`| `PredictionMsg` | CloudNode | RUL cycles, urgency, window |
 | `/decision`        | `DecisionMsg`   | CloudNode | action, priority, operator message |
 
-Each message carries a `Header` (timestamp + robot id) and is JSON-serialisable, the way a
-ROS2 message serialises onto a topic.
+Each message carries a `Header` (timestamp + robot id), mirroring the header a ROS2 message
+would carry on a topic. The messages are plain dataclasses — typed contracts between stages,
+not a wire format; `StateMsg` holds its detection window as a numpy array, so serialisation
+would be added along with a real transport rather than implied here.
 
 ## Why these components
 
