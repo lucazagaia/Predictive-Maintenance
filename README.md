@@ -4,14 +4,9 @@ Sensor data in → **anomaly detection** + **remaining-useful-life (RUL) estimat
 **decision logic** → a maintenance recommendation (`CONTINUE` / `MONITOR` / `PLAN` /
 `URGENT` / `STOP`).
 
-> **V1 — raw Python pipeline.** Tagged [`v1.0.0`](../../releases/tag/v1.0.0): two trained
-> models, a decision layer, and one command that runs the whole thing, with no ROS2 or
-> container needed.
->
-> `main` also carries the in-progress **V2 deployment layer** (`ros2_ws/`, `Dockerfile`) —
-> real ROS2 Humble nodes running these same models. It is functional but still being
-> hardened, so check out the `v1.0.0` tag for the stable V1 surface. See
-> [Roadmap](#roadmap).
+> **V1 — the raw Python pipeline.** Two trained models, a decision layer, and one command
+> that runs the whole thing. Pure Python: no container, no robotics middleware, no training
+> needed to see it work. Released as [`v1.0.0`](../../releases/tag/v1.0.0).
 
 ---
 
@@ -55,11 +50,12 @@ Two specifics worth naming, because they are the parts a reader can check direct
 - **The sensor set** (temperature, vibration, torque, current) is the thesis's proprioceptive
   ADR sensor set (§4.2.1), not a generic industrial one.
 
-The thesis also sketches an edge/cloud reference architecture (Abbildung 2) and a ROS2-based
-publish/subscribe design (§4.2.3). V1 models those boundaries in software — `src/edge.py`
-and `src/cloud.py` exchange typed messages over named topics — without a ROS2 dependency,
-so the pipeline runs anywhere Python does. The V2 layer on `main` takes the same models into
-actual ROS2 nodes with DDS transport (see [`docs/ROS2.md`](docs/ROS2.md)).
+The thesis also sketches an edge/cloud reference architecture (Abbildung 2) and a
+publish/subscribe design for the data path (§4.2.3). V1 models those boundaries in software:
+`src/edge.py` (detection) and `src/cloud.py` (RUL + decision) exchange typed messages over
+named topics, so the split is explicit in the code while the pipeline still runs anywhere
+Python does. Deploying it on real robotics middleware is the next version — see
+[Roadmap](#roadmap).
 
 ---
 
@@ -124,11 +120,7 @@ Predictive-Maintenance/
 ├── models/                # trained weights + scalers + thresholds (committed)
 ├── data/samples/          # demo inputs: ADR readings, real C-MAPSS + voraus windows
 ├── notebooks/             # the same training runs, stage by stage (see notebooks/README.md)
-├── docs/
-│   ├── architecture.md    # component rationale and decision matrix
-│   └── ROS2.md            # V2: running the pipeline as real ROS2 nodes
-├── ros2_ws/               # V2: ROS2 Humble packages (interfaces + rclpy nodes)
-└── Dockerfile             # V2: ROS2 Humble + PyTorch runtime
+└── docs/architecture.md   # component rationale and decision matrix
 ```
 
 Both models are **PyTorch**. `src/` is the runtime library and depends on nothing in
@@ -283,12 +275,12 @@ Honest edges, not apologies:
 
 ## Roadmap
 
-V1 is the pipeline. Later versions add the layers around it:
+`main` is V1 — the complete, self-contained pipeline. Each later version adds one layer
+around it, developed on its own branch:
 
-- **V2 — deployment (in progress, on `main`).** Real ROS2 Humble nodes (rclpy, custom
-  `.msg` interfaces, DDS transport) running the same models in a container, matching the
-  thesis's edge/cloud reference architecture. Working end to end; see
-  [`docs/ROS2.md`](docs/ROS2.md).
+- **V2 — deployment.** The same models as real ROS2 nodes (rclpy, custom `.msg` interfaces,
+  DDS transport) in a container, realising the thesis's edge/cloud reference architecture.
+  In progress on [`feat/ros2`](../../tree/feat/ros2).
 - **V3 — fleet & interface.** Multiple robots, decision history, and an operator-facing
   fleet health view.
 - **Beyond.** Real ADR degradation data to replace the proxy mapping, calibrated uncertainty
