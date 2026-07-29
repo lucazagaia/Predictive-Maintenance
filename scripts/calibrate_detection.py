@@ -113,14 +113,26 @@ def main():
     # is semi-supervised, and a fleet in the field has no labelled faults to calibrate on.
     test_ids = list(rng.choice(anomaly_ids, min(args.n_anomaly, len(anomaly_ids)), replace=False))
     ascore = det.predict_anomaly_score(np.concatenate([window(s) for s in test_ids]))
+
+    # AUROC over this same split: threshold-independent, so it measures the detector rather
+    # than the fences. Recorded in the JSON so the reported figure is reproducible.
+    from sklearn.metrics import roc_auc_score
+    auroc = float(roc_auc_score(
+        np.r_[np.zeros(len(cs)), np.ones(len(ascore))], np.r_[cs, ascore]))
+
+    flag_anomaly = float((ascore > anom_t).mean())
+    flag_warning = float((ascore > warn).mean())
+    false_alarm = float((cs > warn).mean())
+
     print(f"normal  scores: mean={cs.mean():.3e} range[{cs.min():.3e}, {cs.max():.3e}]")
     print(f"anomaly scores: mean={ascore.mean():.3e} range[{ascore.min():.3e}, {ascore.max():.3e}]")
     print(f"normal Q3={q3:.3e}  IQR={iqr:.3e}")
     print(f"thresholds: warning(Q3+1.5*IQR)={warn:.3e}  anomaly(Q3+3*IQR)={anom_t:.3e}")
+    print(f"AUROC over this split: {auroc:.3f}")
     print("evaluation against the held-out anomaly set:")
-    print(f"  anomaly windows flagged anomaly:  {(ascore > anom_t).mean() * 100:.0f}%")
-    print(f"  anomaly windows flagged >=warning: {(ascore > warn).mean() * 100:.0f}%")
-    print(f"  normal windows false-flagged >=warning: {(cs > warn).mean() * 100:.1f}%")
+    print(f"  anomaly windows flagged anomaly:  {flag_anomaly * 100:.0f}%")
+    print(f"  anomaly windows flagged >=warning: {flag_warning * 100:.0f}%")
+    print(f"  normal windows false-flagged >=warning: {false_alarm * 100:.1f}%")
 
     # export a representative normal + the most-detectable anomaly window for the demo
     norm_pick = cal_ids[int(np.argsort(cs)[len(cs) // 2])]
@@ -136,6 +148,13 @@ def main():
         "normal_q3": q3,
         "normal_iqr": iqr,
         "method": "warning = Q3 + 1.5*IQR, anomaly = Q3 + 3*IQR of the normal scores",
+        "evaluation": {
+            "split": f"{len(cal_ids)} normal / {len(test_ids)} anomaly windows, seed 0",
+            "auroc": round(auroc, 4),
+            "anomaly_flagged_anomaly": round(flag_anomaly, 3),
+            "anomaly_flagged_warning_or_above": round(flag_warning, 3),
+            "normal_false_alarm_warning_or_above": round(false_alarm, 3),
+        },
     }, indent=2))
     print("Wrote models/voraus_thresholds.json and data/samples/voraus_*_window.npy")
 

@@ -233,7 +233,9 @@ but never sets them, matching how a fleet without labelled faults would actually
 commissioned.
 
 Measured on 400 held-out anomaly windows: **54%** exceed the anomaly threshold and **73%**
-reach at least `warning`, against a **3.0%** false-alarm rate on normal windows. The ~19%
+reach at least `warning`, against a **3.0%** false-alarm rate on normal windows. Every figure
+in this section is written to `models/voraus_thresholds.json` by the calibration run, so it
+can be checked against the committed artifact. The ~19%
 that land between the two fences are the borderline cases the `warning` band exists for —
 the three-state output is doing real work rather than collapsing to healthy/anomaly.
 
@@ -259,7 +261,7 @@ Honest edges, not apologies:
 
 - **Proxy data, not real ADR streams.** Detection uses voraus-AD, prediction uses C-MAPSS,
   and the ADR→C-MAPSS mapping is hand-built (see *Data*).
-- **Metrics are single-run and untuned.** AUROC 0.946 and RMSE 17.5 come from one run each
+- **Metrics are single-run and untuned.** AUROC 0.949 and RMSE 17.5 come from one run each
   with the papers' default settings; both papers report better figures with tuning and
   ensembling.
 - **RUL resolution is capped.** The model is trained against a piecewise-linear target capped

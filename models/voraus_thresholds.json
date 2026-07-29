@@ -4,5 +4,12 @@
   "calibrated_on": "400 real voraus-AD normal windows (Tukey fences)",
   "normal_q3": -427070.3828125,
   "normal_iqr": 6347.359375,
-  "method": "warning = Q3 + 1.5*IQR, anomaly = Q3 + 3*IQR of the normal scores"
+  "method": "warning = Q3 + 1.5*IQR, anomaly = Q3 + 3*IQR of the normal scores",
+  "evaluation": {
+    "split": "400 normal / 400 anomaly windows, seed 0",
+    "auroc": 0.9488,
+    "anomaly_flagged_anomaly": 0.535,
+    "anomaly_flagged_warning_or_above": 0.733,
+    "normal_false_alarm_warning_or_above": 0.03
+  }
 }
