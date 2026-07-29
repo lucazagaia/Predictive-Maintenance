@@ -221,23 +221,29 @@ Single runs with default settings, reported as measured.
 
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
-  Detection : healthy   score=-430032.0  [MVT-Flow]
+  Detection : healthy   score=-429869.78  [MVT-Flow]
   Prediction: RUL=47 cycles  urgency=urgent
   -> Action : schedule_maintenance_soon   (healthy status, short RUL → PLAN)
 
 SCENARIO: Degraded / fault    (detection window: real sample)
-  Detection : anomaly   score=2727166.0   [MVT-Flow]
+  Detection : anomaly   score=68150368.0   [MVT-Flow]
   -> Action : stop_and_inspect  (priority: critical)
 ```
 
-**AUROC = 0.946** on a held-out normal/anomaly split (seed 42) — above the paper's 0.936,
-which is a mean over 9 runs, so read this as a strong single split rather than a matched
-benchmark.
+**AUROC = 0.949** on a held-out split of 400 normal / 400 anomaly windows — above the
+paper's 0.936, which is a mean over 9 runs, so read this as a strong single split rather
+than a matched benchmark.
 
 MVT-Flow scores are unbounded log-likelihoods, so the thresholds are calibrated on **normal
-windows only** — Tukey fences (warning = Q3 + 1.5·IQR, anomaly = Q3 + 3·IQR). Calibration
-stays normal-only on purpose: the anomaly set evaluates the thresholds but never sets them,
-matching how a fleet without labelled faults would actually be commissioned.
+windows only** — Tukey fences (warning = Q3 + 1.5·IQR, anomaly = Q3 + 3·IQR) over 400 normal
+windows. Calibration stays normal-only on purpose: the anomaly set evaluates the thresholds
+but never sets them, matching how a fleet without labelled faults would actually be
+commissioned.
+
+Measured on 400 held-out anomaly windows: **54%** exceed the anomaly threshold and **73%**
+reach at least `warning`, against a **3.0%** false-alarm rate on normal windows. The ~19%
+that land between the two fences are the borderline cases the `warning` band exists for —
+the three-state output is doing real work rather than collapsing to healthy/anomaly.
 
 ### RUL
 

@@ -1,8 +1,8 @@
 {
-  "warning_threshold": -415653.3046875,
-  "anomaly_threshold": -404795.3203125,
-  "calibrated_on": "40 real voraus-AD normal windows (Tukey fences)",
-  "normal_q3": -426511.2890625,
-  "normal_iqr": 7238.65625,
+  "warning_threshold": -417549.34375,
+  "anomaly_threshold": -408028.3046875,
+  "calibrated_on": "400 real voraus-AD normal windows (Tukey fences)",
+  "normal_q3": -427070.3828125,
+  "normal_iqr": 6347.359375,
   "method": "warning = Q3 + 1.5*IQR, anomaly = Q3 + 3*IQR of the normal scores"
 }
