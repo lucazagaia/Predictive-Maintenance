@@ -221,12 +221,12 @@ Single runs with default settings, reported as measured.
 
 ```
 SCENARIO: Healthy operation   (detection window: real sample)
-  Detection : healthy   score=-429147.66  [MVT-Flow]
+  Detection : healthy   score=-430032.0  [MVT-Flow]
   Prediction: RUL=47 cycles  urgency=urgent
   -> Action : schedule_maintenance_soon   (healthy status, short RUL → PLAN)
 
 SCENARIO: Degraded / fault    (detection window: real sample)
-  Detection : anomaly   score=2726343.0   [MVT-Flow]
+  Detection : anomaly   score=2727166.0   [MVT-Flow]
   -> Action : stop_and_inspect  (priority: critical)
 ```
 
@@ -238,11 +238,6 @@ MVT-Flow scores are unbounded log-likelihoods, so the thresholds are calibrated 
 windows only** — Tukey fences (warning = Q3 + 1.5·IQR, anomaly = Q3 + 3·IQR). Calibration
 stays normal-only on purpose: the anomaly set evaluates the thresholds but never sets them,
 matching how a fleet without labelled faults would actually be commissioned.
-
-> **Note:** the committed `voraus_thresholds.json` predates this scheme (it used p95/p99 of
-> the normal scores, which makes the warning band four percentiles of the normal tail — so
-> narrow that `warning` effectively never fires). Re-run `scripts/calibrate_detection.py`
-> against the parquet to regenerate it.
 
 ### RUL
 
