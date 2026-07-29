@@ -1,7 +1,7 @@
 # Architecture
 
 This repo implements the **model + decision-logic layer** of the thesis reference
-architecture (Abbildung 2). The layered edge/cloud structure and the message flow are
+architecture (Figure 2). The layered edge/cloud structure and the message flow are
 modelled in software — an **edge node** (detection), a **cloud node** (RUL + decision), and
 **typed messages over named topics** (`src/messages.py`, mirroring the thesis ROS2
 `state.msg`). It runs in one process; there is no real ROS2 transport or on-robot

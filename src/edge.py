@@ -1,9 +1,10 @@
 """
 Edge node — on-robot, real-time anomaly detection.
 
-Thesis reference architecture (Abbildung 2): the latency-critical anomaly-detection
+Thesis reference architecture (Figure 2): the latency-critical anomaly-detection
 inference runs in a dedicated Edge layer, locally at the robot, so a fault can trigger a
-stop without a cloud round-trip ("Echtzeit-Detektionsentscheidung lokal beim Roboter").
+stop without a cloud round-trip — the thesis calls for the real-time detection decision
+to be made locally at the robot (§4.3.3).
 
     subscribes: /robot/state      (StateMsg)
     publishes:  /edge/detection   (DetectionMsg)

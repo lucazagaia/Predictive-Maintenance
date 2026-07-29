@@ -12,12 +12,14 @@ Sensor data in → **anomaly detection** + **remaining-useful-life (RUL) estimat
 
 ## Why this exists
 
-My bachelor's thesis (TU Berlin, graded **1.3**) designed a *Vorgehensmodell* — a process
-model for conceiving a predictive-maintenance system for autonomous last-mile delivery
-robots. It is a conceptual work: it specifies which components matter, which data to
-collect, which model classes fit, and how a maintenance decision should be reached. As its
-own limitations section states, **no prototype was built** — the approach was validated
-conceptually, not experimentally.
+My bachelor's thesis (TU Berlin, graded **1.3**) designed a process model for conceiving a
+predictive-maintenance system for autonomous last-mile delivery robots. It is a conceptual
+work: it specifies which components matter, which data to collect, which model classes fit,
+and how a maintenance decision should be reached. As its own limitations section states,
+**no prototype was built** — the approach was validated conceptually, not experimentally.
+
+*(The thesis is written in German. Everything below is in English, with thesis sections
+referenced by number — §4.4.3 and the like — since those are the same in either language.)*
 
 This repository is that missing implementation. It takes the methods the thesis selected,
 builds them, trains them on the benchmark datasets the thesis identifies, and runs them end
@@ -32,25 +34,25 @@ rather than glossed over.
 
 ## Alignment with the thesis
 
-The thesis structures the design into four *Gestaltungsfelder* (design fields, Chapter 4).
-This repository implements the second half of that model — the data-to-decision path:
+The thesis structures the design into four fields (Chapter 4). This repository implements the
+second half of that model — the data-to-decision path:
 
-| Thesis | Scope | In this repo |
+| Thesis | Design field | In this repo |
 |---|---|---|
-| **4.1** Systemanalyse und Wartungsbedarfe | Critical ADR components, failure modes | Conceptual — sets which sensors matter (see *Data*) |
-| **4.2** Datenakquise und Preprocessing | Sensor acquisition, preprocessing, data communication | `scripts/train_*.py` (preprocessing), `src/messages.py` (message contracts) |
-| **4.3** Modellauswahl und -inferenz | Model classes, training, online inference | `src/mvt_flow_model.py`, `src/rul_model.py`, `src/detection.py`, `src/prediction.py` |
-| **4.4** Wartungshilfe | Decision inputs, decision logic, operator output | `src/fusion.py` |
+| **§4.1** | System analysis and maintenance needs — critical components, failure modes | Conceptual — sets which sensors matter (see *Data*) |
+| **§4.2** | Data acquisition and preprocessing, and the data path between components | `scripts/train_*.py` (preprocessing), `src/messages.py` (message contracts) |
+| **§4.3** | Model selection and inference | `src/mvt_flow_model.py`, `src/rul_model.py`, `src/detection.py`, `src/prediction.py` |
+| **§4.4** | Maintenance support — decision inputs, decision logic, operator output | `src/fusion.py` |
 
 Two specifics worth naming, because they are the parts a reader can check directly:
 
-- **The decision matrix** in `src/fusion.py` implements the thesis's *Entscheidungsmatrix*
-  (§4.4.3, Tabelle 1) cell for cell — including its safety-first rule that a live anomaly
+- **The decision matrix** in `src/fusion.py` implements the thesis's decision matrix
+  (§4.4.3, Table 1) cell for cell — including its safety-first rule that a live anomaly
   forces `STOP` regardless of the RUL estimate.
 - **The sensor set** (temperature, vibration, torque, current) is the thesis's proprioceptive
   ADR sensor set (§4.2.1), not a generic industrial one.
 
-The thesis also sketches an edge/cloud reference architecture (Abbildung 2) and a
+The thesis also sketches an edge/cloud reference architecture (§4, Figure 2) and a
 publish/subscribe design for the data path (§4.2.3). V1 models those boundaries in software:
 `src/edge.py` (detection) and `src/cloud.py` (RUL + decision) exchange typed messages over
 named topics, so the split is explicit in the code while the pipeline still runs anywhere

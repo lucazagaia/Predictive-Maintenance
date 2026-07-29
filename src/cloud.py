@@ -1,10 +1,10 @@
 """
 Cloud node — backend prognostics + maintenance decision.
 
-Thesis reference architecture (Abbildung 2): compute-intensive, latency-tolerant backend
-work runs in the Cloud layer — here RUL prognostics and the decision matrix (Wartungshilfe
-/ Anwendungsschicht). The safety-critical detection already happened at the edge; RUL and
-planning can absorb cloud latency.
+Thesis reference architecture (Figure 2): compute-intensive, latency-tolerant backend work
+runs in the Cloud layer — here RUL prognostics and the decision matrix, which the thesis
+places in its maintenance-support and application layers (§4.4). The safety-critical
+detection already happened at the edge; RUL and planning can absorb cloud latency.
 
     subscribes: /robot/state      (StateMsg)  → publishes /cloud/prediction (PredictionMsg)
     subscribes: /edge/detection + /cloud/prediction → publishes /decision   (DecisionMsg)

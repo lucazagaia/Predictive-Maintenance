@@ -1,6 +1,6 @@
 """
 Message contracts between pipeline stages — the software mirror of the thesis's
-ROS2 publish/subscribe design (Abbildung 3, `state.msg`; §4.2.3 Datenkommunikation).
+ROS2 publish/subscribe design (Figure 3, `state.msg`; §4.2.3, on the data path).
 
 In the reference architecture the robot and the edge/cloud components talk over ROS2
 *topics*, each carrying a typed message. Here those messages are plain dataclasses so the
@@ -89,7 +89,7 @@ class PredictionMsg:
 
 @dataclass
 class DecisionMsg:
-    """`/decision` — the maintenance recommendation (thesis Wartungshilfe / Tabelle 1)."""
+    """`/decision` — the maintenance recommendation (thesis §4.4, Table 1)."""
     header: Header
     action: str
     priority: str
