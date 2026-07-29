@@ -282,9 +282,9 @@ Honest edges, not apologies:
 `main` is V1 — the complete, self-contained pipeline. Each later version adds one layer
 around it, developed on its own branch:
 
-- **V2 — deployment.** The same models as real ROS2 nodes (rclpy, custom `.msg` interfaces,
-  DDS transport) in a container, realising the thesis's edge/cloud reference architecture.
-  In progress on [`feat/ros2`](../../tree/feat/ros2).
+- **V2 — real ROS2 nodes.** The same models as rclpy nodes with custom `.msg` interfaces
+  and DDS transport, in a container, realising the thesis's edge/cloud reference
+  architecture. In progress on [`feat/ros2`](../../tree/feat/ros2).
 - **V3 — fleet & interface.** Multiple robots, decision history, and an operator-facing
   fleet health view.
 - **Beyond.** Real ADR degradation data to replace the proxy mapping, calibrated uncertainty
