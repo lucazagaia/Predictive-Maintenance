@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 # --- Feature selection (why): FD001 runs at a single operating condition, so 7 of the
 # 21 sensors are flat and carry no degradation signal. Li et al. keep 14 informative
-# sensors. We ALSO keep the 3 operational settings (17 features total) to match the
+# sensors. The 3 operational settings are ALSO kept (17 features total) to match the
 # model this repo ships; op_setting_3 is constant and normalizes to 0. ---
 OP_SETTINGS = [1, 2, 3]
 SENSORS = [2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 17, 20, 21]  # Li et al. FD001 set

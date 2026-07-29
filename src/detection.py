@@ -60,7 +60,7 @@ class MVTFlowDetectionInterface:
         self.n_signals = n_signals
         
         # Initialize the MVT-Flow detector. The trained weights live outside the repo
-        # (they are large and dataset-bound — see README). If they are absent we fall
+        # (they are large and dataset-bound — see README). If they are absent it falls
         # back to a clearly-labelled synthetic scorer so the end-to-end demo still runs;
         # with real weights present this path does real density-based inference.
         try:
@@ -84,7 +84,7 @@ class MVTFlowDetectionInterface:
         # default: they must come from calibration on real normal windows
         # (scripts/calibrate_detection.py writes voraus_thresholds.json next to the
         # weights). Without that file every window would score below an invented
-        # threshold and be reported "healthy", so we refuse to guess.
+        # threshold and be reported "healthy", so guessing is refused.
         if self.model_loaded:
             self.mode = "MVT-Flow"
             thr_path = Path(model_path).with_name("voraus_thresholds.json")

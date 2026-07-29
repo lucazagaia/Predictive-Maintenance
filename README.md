@@ -144,8 +144,8 @@ verifiable build of them.
 The notebooks cite these **by section, table and page** for every hyperparameter and design
 choice, so any part of the implementation can be checked against its source. Deviations are
 labelled as such — for example this repo feeds the RUL model 17 features (the paper's 14
-sensors plus the 3 operational settings), and the MVT-Flow soft-clamping constant is our
-choice because the paper defines the parameter but never gives it a value.
+sensors plus the 3 operational settings), and the MVT-Flow soft-clamping constant is set here
+rather than taken from the paper, which defines the parameter but never gives it a value.
 
 ---
 

@@ -1,10 +1,15 @@
 # Notebooks
 
-Both models have a **notebook and a script**, on purpose. The scripts are the canonical,
-one-command trainers — they produced the shipped weights and are what CI or a reviewer
-should run. The notebooks are the same pipeline broken into readable stages, so you can
-follow (and re-run) preprocessing → architecture → training → evaluation step by step, and
-so the GPU-heavy detector can be trained on a free Colab runtime.
+Both models have a **notebook and a script**, on purpose. The scripts are the canonical
+one-command trainers — run these to reproduce a model from raw data anywhere. The notebooks
+are the same pipeline broken into readable stages, so preprocessing → architecture →
+training → evaluation can be followed and re-run step by step, and so the GPU-heavy detector
+can be trained on a free Colab runtime.
+
+Provenance of the shipped weights, to be exact about it: `models/rul_cnn.pt` came from
+`scripts/train_rul.py`, and `models/mvt_flow_voraus_ad.pt` came from the detection notebook
+on a Colab GPU. `scripts/train_mvtflow.py` is the equivalent local trainer and shares its
+calibration code, but the committed detector was trained by the notebook.
 
 | Model | Canonical trainer (local / CLI) | Notebook |
 |---|---|---|
@@ -30,7 +35,7 @@ Each notebook opens with this mapping, repeated here for orientation:
 | Threshold calibration | `scripts/calibrate_detection.py` | — (RUL bands are in `src/prediction.py`) |
 | Inference on live data | `src/detection.py` | `src/prediction.py` |
 | Decision from model output | `src/fusion.py` | `src/fusion.py` |
-| Edge / cloud wiring | `src/edge.py`, `src/cloud.py` (and `ros2_ws/` for real ROS2) | |
+| Edge / cloud wiring | `src/edge.py`, `src/cloud.py` | |
 
 ## Datasets
 

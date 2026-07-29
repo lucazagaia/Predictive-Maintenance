@@ -220,7 +220,7 @@ class PredictionInterface:
         return {
             "rul_cycles": int(rul_cycles),
             # Illustrative fixed confidence: the Li et al. CNN is a point-estimate
-            # regressor with no calibrated uncertainty head, so we do NOT fabricate a
+            # regressor with no calibrated uncertainty head, so it does NOT fabricate a
             # per-prediction confidence. Kept constant and honest rather than random.
             "confidence": 0.80,
             "maintenance_window": window,
@@ -384,7 +384,7 @@ class PredictionInterface:
                     return float(R_EARLY)
                 
                 if current_history_len < self.window_size:
-                    # Pad with first reading if we don't have enough history yet
+                    # Pad with first reading if there is not enough history yet
                     padding_needed = self.window_size - current_history_len
                     first_reading = self.sensor_history[0]
                     padded_history = [first_reading] * padding_needed + self.sensor_history
