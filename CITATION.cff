@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Predictive Maintenance for Autonomous Delivery Robots: ML & Decision Layer"
+type: software
+authors:
+  - family-names: Zagaia
+    given-names: Luca
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/lucazagaia/Predictive-Maintenance"
+abstract: >-
+  Anomaly detection (MVT-Flow on voraus-AD) and remaining-useful-life estimation
+  (Li et al. 1-D CNN on NASA C-MAPSS) fused by a thesis-derived decision matrix into a
+  maintenance recommendation for autonomous last-mile delivery robots.
+keywords:
+  - predictive maintenance
+  - anomaly detection
+  - remaining useful life
+  - normalizing flows
+  - autonomous delivery robots
+  - pytorch
+references:
+  - type: article
+    title: "The voraus-AD Dataset for Anomaly Detection in Robot Applications"
+    authors:
+      - family-names: Brockmann
+        given-names: Jan Thieß
+      - family-names: Rudolph
+        given-names: Marco
+      - family-names: Rosenhahn
+        given-names: Bodo
+      - family-names: Wandt
+        given-names: Bastian
+    year: 2023
+    identifiers:
+      - type: other
+        value: "arXiv:2311.04765"
+  - type: article
+    title: "Remaining useful life estimation in prognostics using deep convolution neural networks"
+    authors:
+      - family-names: Li
+        given-names: Xiang
+      - family-names: Ding
+        given-names: Qian
+      - family-names: Sun
+        given-names: Jian-Qiao
+    year: 2018
+    journal: "Reliability Engineering & System Safety"
+    volume: 172
+    start: 1
+    end: 11
