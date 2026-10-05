@@ -20,7 +20,7 @@
 </tr>
 </table>
 
-Implements the architecture from my **TU Berlin bachelor's thesis** (graded 1.3) · Models are swappable reference components from **[Brockmann et al. 2023](https://arxiv.org/abs/2311.04765)** and **Li et al. 2018** · Layer contracts pinned by tests on every push
+Implements the architecture from my **TU Berlin bachelor's thesis** (graded 1.3) · Models are swappable reference components from **[Brockmann et al. 2023](https://arxiv.org/abs/2311.04765)** and **[Li et al. 2018](https://doi.org/10.1016/j.ress.2017.11.021)** · Layer contracts pinned by tests on every push
 
 **[See it work](#see-it-work) · [The contribution](#the-contribution) · [Process model](#the-process-model) · [Reference architecture](#the-reference-architecture) · [How a decision is made](#how-a-decision-is-made) · [Quickstart](#quickstart) · [Roadmap](#roadmap)**
 
@@ -224,7 +224,7 @@ Both models are published methods, reimplemented as the reference components the
 | Layer | Reference model | Why the thesis selects it | Paper |
 |---|---|---|---|
 | Edge | **MVT-Flow** normalizing flow | Density-based, trains on normal data only, built for multivariate time series | Brockmann, Rudolph, Rosenhahn & Wandt (2023), *The voraus-AD Dataset for Anomaly Detection in Robot Applications*, [arXiv:2311.04765](https://arxiv.org/abs/2311.04765) |
-| Cloud | **Li et al. 1-D CNN** | Data-driven, reads windowed multivariate sensor series directly, no hand-crafted features | Li, Ding & Sun (2018), *Remaining useful life estimation in prognostics using deep convolution neural networks*, Reliability Engineering & System Safety 172, 1–11 |
+| Cloud | **Li et al. 1-D CNN** | Data-driven, reads windowed multivariate sensor series directly, no hand-crafted features | Li, Ding & Sun (2018), *Remaining useful life estimation in prognostics using deep convolution neural networks*, Reliability Engineering & System Safety 172, 1–11, [doi:10.1016/j.ress.2017.11.021](https://doi.org/10.1016/j.ress.2017.11.021) |
 
 The notebooks cite both papers by section, table and page for every hyperparameter and label each deviation. For example, the RUL model takes 17 features: the paper's 14 sensors plus the 3 operational settings.
 
