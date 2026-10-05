@@ -73,12 +73,12 @@
       <text x="56" y="21" fill="#4ade80">CONTINUE</text>
     </g>
     <g transform="translate(534 298)">
-      <rect width="104" height="32" rx="16" fill="#38bdf8" fill-opacity="0.15" stroke="#38bdf8"/>
-      <text x="52" y="21" fill="#7dd3fc">MONITOR</text>
+      <rect width="104" height="32" rx="16" fill="#eab308" fill-opacity="0.15" stroke="#eab308"/>
+      <text x="52" y="21" fill="#facc15">MONITOR</text>
     </g>
     <g transform="translate(719 298)">
-      <rect width="76" height="32" rx="16" fill="#eab308" fill-opacity="0.15" stroke="#eab308"/>
-      <text x="38" y="21" fill="#facc15">PLAN</text>
+      <rect width="76" height="32" rx="16" fill="#38bdf8" fill-opacity="0.15" stroke="#38bdf8"/>
+      <text x="38" y="21" fill="#7dd3fc">PLAN</text>
     </g>
     <g transform="translate(876 298)">
       <rect width="96" height="32" rx="16" fill="#f97316" fill-opacity="0.15" stroke="#f97316"/>

@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "Predictive Maintenance for Autonomous Delivery Robots: ML & Decision Layer"
+title: "Predictive Maintenance for Autonomous Delivery Robots: Reference Architecture and Pipeline"
 type: software
 authors:
   - family-names: Zagaia
@@ -9,17 +9,32 @@ version: 1.0.0
 license: MIT
 repository-code: "https://github.com/lucazagaia/Predictive-Maintenance"
 abstract: >-
-  Anomaly detection (MVT-Flow on voraus-AD) and remaining-useful-life estimation
-  (Li et al. 1-D CNN on NASA C-MAPSS) fused by a thesis-derived decision matrix into a
-  maintenance recommendation for autonomous last-mile delivery robots.
+  An end-to-end implementation of the predictive-maintenance architecture designed in a
+  TU Berlin bachelor's thesis for autonomous last-mile delivery robots: edge anomaly
+  detection, cloud remaining-useful-life estimation and a decision layer that fuses both
+  into one maintenance recommendation, connected by typed messages over named topics.
+  MVT-Flow (voraus-AD) and the Li et al. 1-D CNN (NASA C-MAPSS) serve as reference models.
 keywords:
   - predictive maintenance
+  - reference architecture
+  - edge computing
   - anomaly detection
   - remaining useful life
   - normalizing flows
   - autonomous delivery robots
   - pytorch
 references:
+  - type: thesis
+    title: "Ein Vorgehensmodell zur Konzeption eines Predictive-Maintenance-Systems für den Einsatz autonomer Lieferroboter in der letzten Meile"
+    authors:
+      - family-names: Zagaia
+        given-names: Luca
+    thesis-type: "Bachelor's thesis"
+    institution:
+      name: "Technische Universität Berlin"
+    year: 2026
+    languages:
+      - de
   - type: article
     title: "The voraus-AD Dataset for Anomaly Detection in Robot Applications"
     authors:
