@@ -11,6 +11,9 @@ scikit-learn>=1.6       # StandardScaler for the MVT-Flow scaler.pkl
 pandas>=2.0             # C-MAPSS parsing (train_rul.py) + voraus windowing
 pyarrow>=15.0           # reads the voraus-AD parquet (train_mvtflow.py, calibrate_detection.py)
 
+# --- Tests (pytest) ---
+pytest>=8.0
+
 # --- Notebooks / exploratory only (NOT required for the demo) ---
 matplotlib>=3.7
 seaborn>=0.12
