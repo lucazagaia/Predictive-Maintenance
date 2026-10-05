@@ -7,28 +7,8 @@ import json
 import numpy as np
 import pytest
 
-from conftest import ROOT
-from cloud import CloudNode
-from edge import EdgeNode
+from conftest import MODELS, SAMPLES
 from messages import Header, StateMsg
-
-MODELS = ROOT / "models"
-SAMPLES = ROOT / "data" / "samples"
-
-
-@pytest.fixture(scope="module")
-def edge():
-    return EdgeNode(
-        model_path=str(MODELS / "mvt_flow_voraus_ad.pt"),
-        scaler_path=str(MODELS / "scaler_voraus_ad.pkl"),
-    )
-
-
-@pytest.fixture(scope="module")
-def cloud():
-    node = CloudNode()
-    assert node.predictor.model_loaded, "committed RUL weights failed to load"
-    return node
 
 
 @pytest.fixture(scope="module")
