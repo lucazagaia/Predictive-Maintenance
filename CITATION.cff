@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Predictive Maintenance for Autonomous Delivery Robots: Reference Architecture and Pipeline"
+type: software
+authors:
+  - family-names: Zagaia
+    given-names: Luca
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/lucazagaia/Predictive-Maintenance"
+abstract: >-
+  An end-to-end implementation of the predictive-maintenance architecture designed in a
+  TU Berlin bachelor's thesis for autonomous last-mile delivery robots: edge anomaly
+  detection, cloud remaining-useful-life estimation and a decision layer that fuses both
+  into one maintenance recommendation, connected by typed messages over named topics.
+  MVT-Flow (voraus-AD) and the Li et al. 1-D CNN (NASA C-MAPSS) serve as reference models.
+keywords:
+  - predictive maintenance
+  - reference architecture
+  - edge computing
+  - anomaly detection
+  - remaining useful life
+  - normalizing flows
+  - autonomous delivery robots
+  - pytorch
+references:
+  - type: thesis
+    title: "Ein Vorgehensmodell zur Konzeption eines Predictive-Maintenance-Systems für den Einsatz autonomer Lieferroboter in der letzten Meile"
+    authors:
+      - family-names: Zagaia
+        given-names: Luca
+    thesis-type: "Bachelor's thesis"
+    institution:
+      name: "Technische Universität Berlin"
+    year: 2026
+    languages:
+      - de
+  - type: article
+    title: "The voraus-AD Dataset for Anomaly Detection in Robot Applications"
+    authors:
+      - family-names: Brockmann
+        given-names: Jan Thieß
+      - family-names: Rudolph
+        given-names: Marco
+      - family-names: Rosenhahn
+        given-names: Bodo
+      - family-names: Wandt
+        given-names: Bastian
+    year: 2023
+    identifiers:
+      - type: other
+        value: "arXiv:2311.04765"
+  - type: article
+    title: "Remaining useful life estimation in prognostics using deep convolution neural networks"
+    authors:
+      - family-names: Li
+        given-names: Xiang
+      - family-names: Ding
+        given-names: Qian
+      - family-names: Sun
+        given-names: Jian-Qiao
+    year: 2018
+    journal: "Reliability Engineering & System Safety"
+    volume: 172
+    start: 1
+    end: 11

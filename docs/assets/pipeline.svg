@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 340" width="1000" height="340" role="img" aria-labelledby="t d">
+  <title id="t">Pipeline</title>
+  <desc id="d">A voraus-AD window feeds MVT-Flow detection on the edge; a 4-channel ADR reading feeds the Li et al. RUL model in the cloud. Both feed the decision matrix, which outputs CONTINUE, MONITOR, PLAN, URGENT or STOP.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="340" rx="16" fill="#0b1220"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <!-- groups -->
+    <rect x="262" y="18" width="256" height="134" rx="12" fill="#38bdf8" fill-opacity="0.04" stroke="#38bdf8" stroke-opacity="0.5" stroke-dasharray="6 5"/>
+    <text x="276" y="40" fill="#38bdf8" font-size="12" font-weight="700" letter-spacing="1.5">EDGE · ON-ROBOT</text>
+    <rect x="262" y="176" width="526" height="146" rx="12" fill="#a78bfa" fill-opacity="0.04" stroke="#a78bfa" stroke-opacity="0.5" stroke-dasharray="6 5"/>
+    <text x="276" y="198" fill="#a78bfa" font-size="12" font-weight="700" letter-spacing="1.5">CLOUD · BACKEND</text>
+
+    <!-- inputs -->
+    <text x="22" y="40" fill="#94a3b8" font-size="12" font-weight="700" letter-spacing="1.5">ROBOT</text>
+    <text x="80" y="40" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">/robot/state</text>
+    <g transform="translate(20 52)">
+      <rect width="180" height="84" rx="12" fill="#1e293b" stroke="#334155"/>
+      <text x="16" y="30" fill="#f8fafc" font-size="16" font-weight="700">voraus-AD window</text>
+      <text x="16" y="54" fill="#94a3b8" font-size="13">130 signals × 1100 steps</text>
+      <text x="16" y="72" fill="#64748b" font-size="12">real robot data</text>
+    </g>
+    <g transform="translate(20 218)">
+      <rect width="180" height="84" rx="12" fill="#1e293b" stroke="#334155"/>
+      <text x="16" y="30" fill="#f8fafc" font-size="16" font-weight="700">ADR reading</text>
+      <text x="16" y="54" fill="#94a3b8" font-size="13">temp · vib · torque · curr</text>
+      <text x="16" y="72" fill="#64748b" font-size="12">→ C-MAPSS proxy</text>
+    </g>
+
+    <!-- models -->
+    <g transform="translate(282 52)">
+      <rect width="216" height="84" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-opacity="0.6"/>
+      <text x="16" y="30" fill="#f8fafc" font-size="16" font-weight="700">Detection</text>
+      <text x="16" y="52" fill="#94a3b8" font-size="13">ref. model: MVT-Flow</text>
+      <text x="16" y="72" fill="#64748b" font-size="12">healthy · warning · anomaly</text>
+    </g>
+    <g transform="translate(282 218)">
+      <rect width="196" height="84" rx="12" fill="#1e293b" stroke="#a78bfa" stroke-opacity="0.6"/>
+      <text x="16" y="30" fill="#f8fafc" font-size="16" font-weight="700">Prediction</text>
+      <text x="16" y="52" fill="#94a3b8" font-size="13">ref. model: Li et al. CNN</text>
+      <text x="16" y="72" fill="#64748b" font-size="12">RUL cycles → urgency</text>
+    </g>
+    <g transform="translate(598 218)">
+      <rect width="172" height="84" rx="12" fill="#1e293b" stroke="#a78bfa" stroke-opacity="0.6"/>
+      <text x="16" y="30" fill="#f8fafc" font-size="16" font-weight="700">Decision matrix</text>
+      <text x="16" y="52" fill="#94a3b8" font-size="13">thesis §4.4.3, Table 1</text>
+      <text x="16" y="72" fill="#64748b" font-size="12">safety over planning</text>
+    </g>
+  </g>
+
+  <!-- arrows + topics -->
+  <g fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M200 94H280"/>
+    <path d="M200 260H280"/>
+    <path d="M498 94H684V216"/>
+    <path d="M478 260H596"/>
+    <path d="M770 260H818"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#64748b">
+    <text x="591" y="86" text-anchor="middle">/edge/detection</text>
+    <text x="537" y="252" text-anchor="middle">/cloud/prediction</text>
+  </g>
+
+  <!-- outputs -->
+  <path d="M822 72V284" stroke="#334155" stroke-width="2"/>
+  <g stroke="#334155" stroke-width="2">
+    <path d="M822 72H836"/><path d="M822 125H836"/><path d="M822 178H836"/><path d="M822 231H836"/><path d="M822 284H836"/>
+  </g>
+  <text x="836" y="38" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">/decision</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" text-anchor="middle">
+    <g transform="translate(838 55)"><rect width="140" height="34" rx="17" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e"/><text x="70" y="22" fill="#4ade80">CONTINUE</text></g>
+    <g transform="translate(838 108)"><rect width="140" height="34" rx="17" fill="#eab308" fill-opacity="0.15" stroke="#eab308"/><text x="70" y="22" fill="#facc15">MONITOR</text></g>
+    <g transform="translate(838 161)"><rect width="140" height="34" rx="17" fill="#38bdf8" fill-opacity="0.15" stroke="#38bdf8"/><text x="70" y="22" fill="#7dd3fc">PLAN</text></g>
+    <g transform="translate(838 214)"><rect width="140" height="34" rx="17" fill="#f97316" fill-opacity="0.15" stroke="#f97316"/><text x="70" y="22" fill="#fb923c">URGENT</text></g>
+    <g transform="translate(838 267)"><rect width="140" height="34" rx="17" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444"/><text x="70" y="22" fill="#f87171">STOP</text></g>
+  </g>
+</svg>

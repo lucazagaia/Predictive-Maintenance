@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" width="1000" height="580" role="img" aria-labelledby="t d">
+  <title id="t">Process model</title>
+  <desc id="d">Process model for developing a predictive-maintenance system for autonomous delivery robots, derived by contingency-based tailoring with TAME/GQM. Four design fields in sequence: (1) system analysis and maintenance needs, (2) data acquisition and preprocessing, (3) model selection and inference, (4) maintenance support. Iterative updates through field feedback, threshold adjustment and model maintenance close the loop.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#cbd5e1"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="580" rx="16" fill="#0b1220"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="500" y="40" fill="#f8fafc" font-size="22" font-weight="800" text-anchor="middle">Process model</text>
+    <text x="500" y="62" fill="#94a3b8" font-size="13" text-anchor="middle">Methodological derivation: contingency-based tailoring with TAME/GQM</text>
+
+    <!-- ===== 1 System analysis & maintenance needs ===== -->
+    <rect x="18" y="84" width="221" height="394" rx="14" fill="#0284c7" fill-opacity="0.07" stroke="#0284c7" stroke-opacity="0.8"/>
+    <path d="M32 84H225A14 14 0 0 1 239 98V138H18V98A14 14 0 0 1 32 84Z" fill="#0284c7"/>
+    <circle cx="44" cy="111" r="15" fill="#ffffff"/>
+    <text x="44" y="117" fill="#0284c7" font-size="17" font-weight="800" text-anchor="middle">1</text>
+    <text x="68" y="107" fill="#ffffff" font-size="15" font-weight="700">System analysis &amp;</text>
+    <text x="68" y="126" fill="#ffffff" font-size="15" font-weight="700">maintenance needs</text>
+
+    <g fill="#111a2e" stroke="#0284c7" stroke-opacity="0.7">
+      <rect x="30" y="150" width="197" height="78" rx="10"/>
+      <rect x="30" y="240" width="197" height="113" rx="10"/>
+      <rect x="30" y="365" width="197" height="58" rx="10"/>
+    </g>
+    <g fill="#7dd3fc" font-size="14" font-weight="700" text-anchor="middle">
+      <text x="128.5" y="176">ADR operating context</text>
+      <text x="128.5" y="266">Critical components</text>
+      <text x="128.5" y="284">&amp; failure modes</text>
+      <text x="128.5" y="391">Monitoring goals</text>
+      <text x="128.5" y="409">&amp; PdM scope</text>
+    </g>
+    <g fill="#94a3b8" font-size="12.5" text-anchor="middle">
+      <text x="128.5" y="197">Terrain, weather, security,</text>
+      <text x="128.5" y="214">connectivity</text>
+      <text x="128.5" y="305">Effectors, sensors,</text>
+      <text x="128.5" y="322">control system, power</text>
+      <text x="128.5" y="339">supply, communication</text>
+    </g>
+
+    <!-- ===== 2 Data acquisition & preprocessing ===== -->
+    <rect x="265" y="84" width="221" height="394" rx="14" fill="#16a34a" fill-opacity="0.07" stroke="#16a34a" stroke-opacity="0.8"/>
+    <path d="M279 84H472A14 14 0 0 1 486 98V138H265V98A14 14 0 0 1 279 84Z" fill="#16a34a"/>
+    <circle cx="291" cy="111" r="15" fill="#ffffff"/>
+    <text x="291" y="117" fill="#16a34a" font-size="17" font-weight="800" text-anchor="middle">2</text>
+    <text x="315" y="107" fill="#ffffff" font-size="15" font-weight="700">Data acquisition &amp;</text>
+    <text x="315" y="126" fill="#ffffff" font-size="15" font-weight="700">preprocessing</text>
+
+    <g fill="#111a2e" stroke="#16a34a" stroke-opacity="0.7">
+      <rect x="277" y="150" width="197" height="113" rx="10"/>
+      <rect x="277" y="275" width="197" height="61" rx="10"/>
+      <rect x="277" y="348" width="197" height="78" rx="10"/>
+    </g>
+    <g fill="#4ade80" font-size="14" font-weight="700" text-anchor="middle">
+      <text x="375.5" y="176">Runtime data &amp;</text>
+      <text x="375.5" y="194">state variables</text>
+      <text x="375.5" y="301">Communication system</text>
+      <text x="375.5" y="374">Preprocessing</text>
+    </g>
+    <g fill="#94a3b8" font-size="12.5" text-anchor="middle">
+      <text x="375.5" y="215">Current, torque,</text>
+      <text x="375.5" y="232">temperature, vibration,</text>
+      <text x="375.5" y="249">wheel rotation, odometry</text>
+      <text x="375.5" y="322">ROS2, publish/subscribe</text>
+      <text x="375.5" y="395">Cleaning, scaling</text>
+      <text x="375.5" y="412">&amp; windowing</text>
+    </g>
+
+    <!-- ===== 3 Model selection & inference ===== -->
+    <rect x="512" y="84" width="221" height="394" rx="14" fill="#a16207" fill-opacity="0.09" stroke="#ca8a04" stroke-opacity="0.85"/>
+    <path d="M526 84H719A14 14 0 0 1 733 98V138H512V98A14 14 0 0 1 526 84Z" fill="#a16207"/>
+    <circle cx="538" cy="111" r="15" fill="#ffffff"/>
+    <text x="538" y="117" fill="#a16207" font-size="17" font-weight="800" text-anchor="middle">3</text>
+    <text x="562" y="107" fill="#ffffff" font-size="15" font-weight="700">Model selection &amp;</text>
+    <text x="562" y="126" fill="#ffffff" font-size="15" font-weight="700">inference</text>
+
+    <g fill="#111a2e" stroke="#ca8a04" stroke-opacity="0.8">
+      <rect x="524" y="150" width="197" height="95" rx="10"/>
+      <rect x="524" y="257" width="197" height="61" rx="10"/>
+      <rect x="524" y="330" width="197" height="96" rx="10"/>
+    </g>
+    <g fill="#fde047" font-size="14" font-weight="700" text-anchor="middle">
+      <text x="622.5" y="176">Model classes</text>
+      <text x="622.5" y="283">Training &amp; evaluation</text>
+      <text x="622.5" y="356">Online inference &amp;</text>
+      <text x="622.5" y="374">model updates</text>
+    </g>
+    <g fill="#94a3b8" font-size="12.5" text-anchor="middle">
+      <text x="622.5" y="197">Anomaly detection +</text>
+      <text x="622.5" y="214">remaining-useful-life</text>
+      <text x="622.5" y="231">estimation</text>
+      <text x="622.5" y="304">Historical + runtime data</text>
+      <text x="622.5" y="395">Edge anomaly detection,</text>
+      <text x="622.5" y="412">cloud RUL, concept drift</text>
+    </g>
+
+    <!-- ===== 4 Maintenance support ===== -->
+    <rect x="759" y="84" width="221" height="394" rx="14" fill="#7c3aed" fill-opacity="0.08" stroke="#7c3aed" stroke-opacity="0.85"/>
+    <path d="M773 84H966A14 14 0 0 1 980 98V138H759V98A14 14 0 0 1 773 84Z" fill="#7c3aed"/>
+    <circle cx="785" cy="111" r="15" fill="#ffffff"/>
+    <text x="785" y="117" fill="#7c3aed" font-size="17" font-weight="800" text-anchor="middle">4</text>
+    <text x="809" y="116" fill="#ffffff" font-size="15" font-weight="700">Maintenance support</text>
+
+    <g fill="#111a2e" stroke="#7c3aed" stroke-opacity="0.8">
+      <rect x="771" y="150" width="197" height="78" rx="10"/>
+      <rect x="771" y="240" width="197" height="96" rx="10"/>
+      <rect x="771" y="348" width="197" height="116" rx="10"/>
+    </g>
+    <g fill="#c4b5fd" font-size="14" font-weight="700" text-anchor="middle">
+      <text x="869.5" y="176">Result fusion</text>
+      <text x="869.5" y="266">Decision logic /</text>
+      <text x="869.5" y="284">prioritisation</text>
+      <text x="869.5" y="374">Maintenance</text>
+      <text x="869.5" y="392">recommendations</text>
+    </g>
+    <g fill="#94a3b8" font-size="12.5" text-anchor="middle">
+      <text x="869.5" y="197">Anomaly score, warnings,</text>
+      <text x="869.5" y="214">RUL, fleet constraints</text>
+      <text x="869.5" y="305">Translate model outputs</text>
+      <text x="869.5" y="322">into action classes</text>
+    </g>
+
+    <!-- guiding questions -->
+    <g fill="#cbd5e1" font-size="13" font-style="italic" text-anchor="middle">
+      <text x="128.5" y="504">What must be monitored?</text>
+      <text x="375.5" y="504">How are signals made model-ready?</text>
+      <text x="622.5" y="504">How are state and RUL derived?</text>
+      <text x="869.5" y="504">Which action is required?</text>
+    </g>
+
+    <!-- feedback loop -->
+    <rect x="120" y="524" width="760" height="36" rx="8" fill="none" stroke="#475569" stroke-dasharray="6 5"/>
+    <text x="500" y="547" fill="#cbd5e1" font-size="13" text-anchor="middle">↻  Iterative updates through field feedback, threshold adjustment and model maintenance</text>
+  </g>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" text-anchor="middle">
+    <g transform="translate(781 404)"><rect width="64" height="22" rx="11" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e"/><text x="32" y="15" fill="#4ade80">CONTINUE</text></g>
+    <g transform="translate(850.5 404)"><rect width="44" height="22" rx="11" fill="#38bdf8" fill-opacity="0.15" stroke="#38bdf8"/><text x="22" y="15" fill="#7dd3fc">PLAN</text></g>
+    <g transform="translate(899.5 404)"><rect width="58" height="22" rx="11" fill="#eab308" fill-opacity="0.15" stroke="#eab308"/><text x="29" y="15" fill="#facc15">MONITOR</text></g>
+    <g transform="translate(817.5 432)"><rect width="54" height="22" rx="11" fill="#f97316" fill-opacity="0.15" stroke="#f97316"/><text x="27" y="15" fill="#fb923c">URGENT</text></g>
+    <g transform="translate(877.5 432)"><rect width="44" height="22" rx="11" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444"/><text x="22" y="15" fill="#f87171">STOP</text></g>
+  </g>
+
+  <!-- sequence arrows -->
+  <g stroke="#cbd5e1" stroke-width="2.5" marker-end="url(#arrow)">
+    <path d="M241 281H261"/>
+    <path d="M488 281H508"/>
+    <path d="M735 281H755"/>
+  </g>
+</svg>

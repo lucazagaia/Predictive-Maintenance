@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-labelledby="t d">
+  <title id="t">Predictive Maintenance for Autonomous Delivery Robots</title>
+  <desc id="d">A delivery robot streams sensor data into anomaly detection and remaining-useful-life estimation, which resolve into one of five maintenance actions.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#16213a"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="trace" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="0.55" stop-color="#22c55e"/>
+      <stop offset="0.75" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#ef4444"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="360" rx="20" fill="url(#bg)"/>
+  <rect width="1200" height="360" rx="20" fill="url(#grid)"/>
+
+  <!-- delivery robot -->
+  <g transform="translate(70 92)">
+    <ellipse cx="95" cy="206" rx="92" ry="10" fill="#000" fill-opacity="0.35"/>
+    <circle cx="95" cy="95" r="120" fill="url(#glow)"/>
+    <!-- antenna / sensor mast -->
+    <line x1="140" y1="40" x2="140" y2="8" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="140" cy="6" r="7" fill="#38bdf8"/>
+    <path d="M154 -6a20 20 0 0 1 0 24M164 -14a32 32 0 0 1 0 40" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-opacity="0.7"/>
+    <!-- body -->
+    <rect x="10" y="40" width="170" height="130" rx="22" fill="#e2e8f0"/>
+    <rect x="10" y="40" width="170" height="44" rx="22" fill="#cbd5e1"/>
+    <rect x="10" y="62" width="170" height="22" fill="#cbd5e1"/>
+    <!-- lid seam + flag stripe -->
+    <line x1="22" y1="84" x2="168" y2="84" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="28" y="100" width="62" height="10" rx="5" fill="#f59e0b"/>
+    <!-- status light (healthy) -->
+    <circle cx="150" cy="124" r="11" fill="#0f172a"/>
+    <circle cx="150" cy="124" r="6" fill="#22c55e"/>
+    <!-- wheels -->
+    <g fill="#1e293b" stroke="#475569" stroke-width="4">
+      <circle cx="38" cy="180" r="20"/>
+      <circle cx="95" cy="180" r="20"/>
+      <circle cx="152" cy="180" r="20"/>
+    </g>
+    <g fill="#94a3b8">
+      <circle cx="38" cy="180" r="5"/>
+      <circle cx="95" cy="180" r="5"/>
+      <circle cx="152" cy="180" r="5"/>
+    </g>
+  </g>
+
+  <!-- title -->
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="340" y="120" fill="#38bdf8" font-size="18" font-weight="600" letter-spacing="3">AUTONOMOUS DELIVERY ROBOTS</text>
+    <text x="338" y="178" fill="#f8fafc" font-size="58" font-weight="800" letter-spacing="-1">Predictive Maintenance</text>
+    <text x="340" y="216" fill="#94a3b8" font-size="21">Is it healthy now? How long has it got? So what do we do?</text>
+  </g>
+
+  <!-- sensor trace: calm, then degrading -->
+  <polyline points="340,262 412,262 424,254 436,270 448,262 520,262 532,252 544,272 556,262 628,262 640,250 652,274 664,262 736,262 748,246 760,278 772,262 844,262 856,238 868,286 880,262 952,262 964,228 976,296 988,262 1060,262 1072,218 1084,306 1096,262 1130,262"
+            fill="none" stroke="url(#trace)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- action chips, ordered by severity -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" text-anchor="middle">
+    <g transform="translate(340 298)">
+      <rect width="112" height="32" rx="16" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e"/>
+      <text x="56" y="21" fill="#4ade80">CONTINUE</text>
+    </g>
+    <g transform="translate(534 298)">
+      <rect width="104" height="32" rx="16" fill="#eab308" fill-opacity="0.15" stroke="#eab308"/>
+      <text x="52" y="21" fill="#facc15">MONITOR</text>
+    </g>
+    <g transform="translate(719 298)">
+      <rect width="76" height="32" rx="16" fill="#38bdf8" fill-opacity="0.15" stroke="#38bdf8"/>
+      <text x="38" y="21" fill="#7dd3fc">PLAN</text>
+    </g>
+    <g transform="translate(876 298)">
+      <rect width="96" height="32" rx="16" fill="#f97316" fill-opacity="0.15" stroke="#f97316"/>
+      <text x="48" y="21" fill="#fb923c">URGENT</text>
+    </g>
+    <g transform="translate(1054 298)">
+      <rect width="76" height="32" rx="16" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444"/>
+      <text x="38" y="21" fill="#f87171">STOP</text>
+    </g>
+  </g>
+
+</svg>
